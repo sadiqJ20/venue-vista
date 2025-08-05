@@ -14,7 +14,228 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      booking_approvals: {
+        Row: {
+          action: string
+          approver_id: string
+          booking_id: string
+          created_at: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          action: string
+          approver_id: string
+          booking_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          action?: string
+          approver_id?: string
+          booking_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_approvals_approver_id_fkey"
+            columns: ["approver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_approvals_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bookings: {
+        Row: {
+          attendees_count: number
+          created_at: string
+          department: Database["public"]["Enums"]["department_name"]
+          end_time: string
+          event_date: string
+          event_name: string
+          faculty_id: string
+          faculty_name: string
+          guest_lecture_names: string | null
+          guest_lectures_count: number
+          hall_id: string
+          hod_name: string
+          id: string
+          institution_type: Database["public"]["Enums"]["institution_type"]
+          organizer_name: string
+          rejection_reason: string | null
+          required_ac: boolean | null
+          required_audio_system: boolean | null
+          required_mic: boolean | null
+          required_projector: boolean | null
+          start_time: string
+          status: Database["public"]["Enums"]["booking_status"]
+          student_years: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          attendees_count: number
+          created_at?: string
+          department: Database["public"]["Enums"]["department_name"]
+          end_time: string
+          event_date: string
+          event_name: string
+          faculty_id: string
+          faculty_name: string
+          guest_lecture_names?: string | null
+          guest_lectures_count: number
+          hall_id: string
+          hod_name: string
+          id?: string
+          institution_type: Database["public"]["Enums"]["institution_type"]
+          organizer_name: string
+          rejection_reason?: string | null
+          required_ac?: boolean | null
+          required_audio_system?: boolean | null
+          required_mic?: boolean | null
+          required_projector?: boolean | null
+          start_time: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          student_years?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          attendees_count?: number
+          created_at?: string
+          department?: Database["public"]["Enums"]["department_name"]
+          end_time?: string
+          event_date?: string
+          event_name?: string
+          faculty_id?: string
+          faculty_name?: string
+          guest_lecture_names?: string | null
+          guest_lectures_count?: number
+          hall_id?: string
+          hod_name?: string
+          id?: string
+          institution_type?: Database["public"]["Enums"]["institution_type"]
+          organizer_name?: string
+          rejection_reason?: string | null
+          required_ac?: boolean | null
+          required_audio_system?: boolean | null
+          required_mic?: boolean | null
+          required_projector?: boolean | null
+          start_time?: string
+          status?: Database["public"]["Enums"]["booking_status"]
+          student_years?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_faculty_id_fkey"
+            columns: ["faculty_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_hall_id_fkey"
+            columns: ["hall_id"]
+            isOneToOne: false
+            referencedRelation: "halls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      halls: {
+        Row: {
+          block: Database["public"]["Enums"]["block_name"]
+          capacity: number
+          created_at: string
+          has_ac: boolean | null
+          has_audio_system: boolean | null
+          has_mic: boolean | null
+          has_projector: boolean | null
+          id: string
+          name: string
+          type: Database["public"]["Enums"]["hall_type"]
+          updated_at: string
+        }
+        Insert: {
+          block: Database["public"]["Enums"]["block_name"]
+          capacity: number
+          created_at?: string
+          has_ac?: boolean | null
+          has_audio_system?: boolean | null
+          has_mic?: boolean | null
+          has_projector?: boolean | null
+          id?: string
+          name: string
+          type: Database["public"]["Enums"]["hall_type"]
+          updated_at?: string
+        }
+        Update: {
+          block?: Database["public"]["Enums"]["block_name"]
+          capacity?: number
+          created_at?: string
+          has_ac?: boolean | null
+          has_audio_system?: boolean | null
+          has_mic?: boolean | null
+          has_projector?: boolean | null
+          id?: string
+          name?: string
+          type?: Database["public"]["Enums"]["hall_type"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          department: Database["public"]["Enums"]["department_name"] | null
+          email: string
+          id: string
+          mobile_number: string
+          name: string
+          password_hash: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          unique_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          department?: Database["public"]["Enums"]["department_name"] | null
+          email: string
+          id?: string
+          mobile_number: string
+          name: string
+          password_hash?: string | null
+          role: Database["public"]["Enums"]["user_role"]
+          unique_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          department?: Database["public"]["Enums"]["department_name"] | null
+          email?: string
+          id?: string
+          mobile_number?: string
+          name?: string
+          password_hash?: string | null
+          role?: Database["public"]["Enums"]["user_role"]
+          unique_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +244,27 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      block_name: "East Block" | "West Block" | "Main Block" | "Diploma Block"
+      booking_status:
+        | "pending_hod"
+        | "pending_principal"
+        | "pending_pro"
+        | "approved"
+        | "rejected"
+      department_name:
+        | "CSE"
+        | "IT"
+        | "ECE"
+        | "EEE"
+        | "MECH"
+        | "CIVIL"
+        | "AERO"
+        | "CHEMICAL"
+        | "AIDS"
+        | "CSBS"
+      hall_type: "Auditorium" | "Smart Classroom"
+      institution_type: "School" | "Diploma" | "Polytechnic" | "Engineering"
+      user_role: "faculty" | "hod" | "principal" | "pro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +391,30 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      block_name: ["East Block", "West Block", "Main Block", "Diploma Block"],
+      booking_status: [
+        "pending_hod",
+        "pending_principal",
+        "pending_pro",
+        "approved",
+        "rejected",
+      ],
+      department_name: [
+        "CSE",
+        "IT",
+        "ECE",
+        "EEE",
+        "MECH",
+        "CIVIL",
+        "AERO",
+        "CHEMICAL",
+        "AIDS",
+        "CSBS",
+      ],
+      hall_type: ["Auditorium", "Smart Classroom"],
+      institution_type: ["School", "Diploma", "Polytechnic", "Engineering"],
+      user_role: ["faculty", "hod", "principal", "pro"],
+    },
   },
 } as const
