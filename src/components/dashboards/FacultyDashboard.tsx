@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useNotifications } from "@/hooks/useNotifications";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, MapPin, Users, Plus, BookOpen, Bell, LogOut } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Plus, BookOpen, Bell, BellRing, LogOut, Search } from "lucide-react";
 import BookingForm from "@/components/BookingForm";
+import BookingCard from "@/components/BookingCard";
 import { useToast } from "@/hooks/use-toast";
 
 interface Hall {
@@ -35,17 +38,29 @@ interface Booking {
 
 const FacultyDashboard = () => {
   const { profile, signOut } = useAuth();
+  const { notifications, unreadCount, markAllAsRead } = useNotifications();
   const { toast } = useToast();
   const [halls, setHalls] = useState<Hall[]>([]);
-  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [filteredHalls, setFilteredHalls] = useState<Hall[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [bookings, setBookings] = useState<any[]>([]);
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [selectedHall, setSelectedHall] = useState<Hall | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchHalls();
-    fetchBookings();
-  }, []);
+    if (profile) fetchBookings();
+  }, [profile]);
+
+  useEffect(() => {
+    const filtered = halls.filter(hall =>
+      hall.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      hall.block.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      hall.type.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredHalls(filtered);
+  }, [halls, searchTerm]);
 
   const fetchHalls = async () => {
     const { data, error } = await supabase
@@ -61,6 +76,7 @@ const FacultyDashboard = () => {
       });
     } else {
       setHalls(data || []);
+      setFilteredHalls(data || []);
     }
   };
 
@@ -71,7 +87,12 @@ const FacultyDashboard = () => {
       .from('bookings')
       .select(`
         *,
-        halls (*)
+        halls:hall_id (
+          name,
+          block,
+          type,
+          capacity
+        )
       `)
       .eq('faculty_id', profile.id)
       .order('created_at', { ascending: false });
@@ -144,13 +165,17 @@ const FacultyDashboard = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Faculty Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {profile?.name}</p>
+            <p className="text-muted-foreground">Welcome back, {profile?.name} • {profile?.department} Department</p>
           </div>
           <div className="flex items-center gap-4">
-            <Badge variant="outline" className="flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              {profile?.department}
-            </Badge>
+            <Button variant="outline" size="sm" onClick={markAllAsRead} className="relative">
+              {unreadCount > 0 ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+              {unreadCount > 0 && (
+                <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                  {unreadCount}
+                </Badge>
+              )}
+            </Button>
             <Button variant="outline" onClick={signOut} size="sm">
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
@@ -160,20 +185,78 @@ const FacultyDashboard = () => {
       </header>
 
       <div className="container mx-auto px-6 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Total Bookings</p>
+                  <p className="text-2xl font-bold">{bookings.length}</p>
+                </div>
+                <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Calendar className="h-4 w-4 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Pending</p>
+                  <p className="text-2xl font-bold">{bookings.filter(b => ['pending_hod', 'pending_principal', 'pending_pro'].includes(b.status)).length}</p>
+                </div>
+                <div className="h-8 w-8 bg-yellow-500/10 rounded-full flex items-center justify-center">
+                  <Clock className="h-4 w-4 text-yellow-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Approved</p>
+                  <p className="text-2xl font-bold">{bookings.filter(b => b.status === 'approved').length}</p>
+                </div>
+                <div className="h-8 w-8 bg-green-500/10 rounded-full flex items-center justify-center">
+                  <Users className="h-4 w-4 text-green-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         <Tabs defaultValue="halls" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="halls">Available Halls</TabsTrigger>
             <TabsTrigger value="bookings">My Bookings</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+            <TabsTrigger value="notifications" className="relative">
+              Notifications
+              {unreadCount > 0 && (
+                <Badge className="ml-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                  {unreadCount}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="halls" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-xl font-semibold">Available Halls</h2>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="Search halls..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-64"
+                />
+              </div>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {halls.map((hall) => (
+              {filteredHalls.map((hall) => (
                 <Card key={hall.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
@@ -220,60 +303,56 @@ const FacultyDashboard = () => {
                 <CardContent className="text-center py-8">
                   <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <p className="text-muted-foreground">No bookings found</p>
+                  <p className="text-sm text-muted-foreground">Start by booking a hall from the available halls</p>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-4">
                 {bookings.map((booking) => (
-                  <Card key={booking.id}>
-                    <CardHeader>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <CardTitle>{booking.event_name}</CardTitle>
-                          <CardDescription>{booking.halls.name}</CardDescription>
-                        </div>
-                        <Badge variant={getStatusColor(booking.status) as any}>
-                          {getStatusText(booking.status)}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-muted-foreground" />
-                          {new Date(booking.event_date).toLocaleDateString()}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          {booking.start_time} - {booking.end_time}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
-                          {booking.halls.block}
-                        </div>
-                      </div>
-                      
-                      {booking.rejection_reason && (
-                        <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
-                          <p className="text-sm text-destructive font-medium">Rejection Reason:</p>
-                          <p className="text-sm text-destructive">{booking.rejection_reason}</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <BookingCard key={booking.id} booking={booking} />
                 ))}
               </div>
             )}
           </TabsContent>
 
           <TabsContent value="notifications" className="space-y-6">
-            <h2 className="text-xl font-semibold">Notifications</h2>
-            <Card>
-              <CardContent className="text-center py-8">
-                <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">No new notifications</p>
-              </CardContent>
-            </Card>
+            <div className="flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Notifications</h2>
+              {notifications.length > 0 && (
+                <Button variant="outline" size="sm" onClick={markAllAsRead}>
+                  Mark All Read
+                </Button>
+              )}
+            </div>
+            
+            {notifications.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-8">
+                  <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No new notifications</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {notifications.map((notification) => (
+                  <Card key={notification.id} className={notification.read ? 'opacity-60' : ''}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-sm">{notification.message}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(notification.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                        {!notification.read && (
+                          <Badge variant="secondary">New</Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
