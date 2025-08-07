@@ -107,28 +107,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl
-      }
-    });
-
-    if (error) return { error };
-
-    if (data.user) {
-      // Create profile
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          user_id: data.user.id,
-          email,
+        emailRedirectTo: redirectUrl,
+        data: {
           name: userData.name,
           mobile_number: userData.mobile_number,
           role: userData.role,
           department: userData.department,
           unique_id: userData.unique_id
-        });
+        }
+      }
+    });
 
-      if (profileError) return { error: profileError };
-    }
+    if (error) return { error };
 
     return { error: null };
   };
