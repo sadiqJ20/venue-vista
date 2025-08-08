@@ -101,24 +101,61 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string, userData: SignUpData) => {
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { data, error } = await supabase.auth.signUp({
+    // Create auth user with metadata
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: redirectUrl,
         data: {
           name: userData.name,
           mobile_number: userData.mobile_number,
           role: userData.role,
           department: userData.department,
-          unique_id: userData.unique_id
-        }
-      }
+          unique_id: userData.unique_id,
+        },
+      },
     });
 
-    if (error) return { error };
+    if (signUpError) return { error: signUpError };
+
+    // Try to sign in immediately (no email verification flow)
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    // If project still requires email confirmation and sign-in fails, surface the error
+    if (signInError && !signUpData.session) {
+      return { error: signInError };
+    }
+
+    // Ensure profile exists/updated after auth
+    const authedUserId = signInData?.user?.id ?? signUpData.user?.id;
+    const authedEmail = signInData?.user?.email ?? signUpData.user?.email ?? email;
+
+    if (authedUserId) {
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', authedUserId)
+        .maybeSingle();
+
+      const payload: Partial<Profile> & { user_id: string; email: string } = {
+        user_id: authedUserId,
+        email: authedEmail,
+        name: userData.name,
+        mobile_number: userData.mobile_number,
+        role: userData.role,
+        department: userData.department,
+        unique_id: userData.unique_id,
+      } as any;
+
+      if (existing?.id) {
+        await supabase.from('profiles').update(payload).eq('id', existing.id);
+      } else {
+        await supabase.from('profiles').insert(payload as any);
+      }
+    }
 
     return { error: null };
   };
