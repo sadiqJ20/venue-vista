@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -31,10 +31,13 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     organizerName: '',
+    facultyName: '',
+    facultyPhone: '',
     institutionType: '',
     guestLecturesCount: 0,
     guestLectureNames: '',
     eventName: '',
+    description: '',
     eventDate: '',
     startTime: '',
     endTime: '',
@@ -55,12 +58,14 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
       const { error } = await supabase.from('bookings').insert({
         faculty_id: profile.id,
         hall_id: hall.id,
-        faculty_name: profile.name,
+        faculty_name: formData.facultyName || profile.name,
+        faculty_phone: formData.facultyPhone || (profile as any)?.mobile_number,
         organizer_name: formData.organizerName,
         institution_type: formData.institutionType as any,
         guest_lectures_count: formData.guestLecturesCount,
         guest_lecture_names: formData.guestLectureNames,
         event_name: formData.eventName,
+        description: formData.description,
         department: profile.department!,
         hod_name: 'Auto-filled HOD',
         event_date: formData.eventDate,
@@ -92,6 +97,9 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Book {hall.name}</DialogTitle>
+          <DialogDescription>
+            Provide event details and equipment needs. HOD, Principal and PRO will see this request.
+          </DialogDescription>
           <Button variant="ghost" size="sm" onClick={onClose} className="absolute right-4 top-4">
             <X className="h-4 w-4" />
           </Button>
@@ -103,13 +111,13 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
               <Label>Organizer Name</Label>
               <Input
                 value={formData.organizerName}
-                onChange={(e) => setFormData({...formData, organizerName: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, organizerName: e.target.value })}
                 required
               />
             </div>
             <div>
               <Label>Institution Type</Label>
-              <Select onValueChange={(value) => setFormData({...formData, institutionType: value})}>
+              <Select value={formData.institutionType} onValueChange={(value) => setFormData({ ...formData, institutionType: value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select institution" />
                 </SelectTrigger>
@@ -121,11 +129,12 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
                 </SelectContent>
               </Select>
             </div>
+
             <div>
               <Label>Event Name</Label>
               <Input
                 value={formData.eventName}
-                onChange={(e) => setFormData({...formData, eventName: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, eventName: e.target.value })}
                 required
               />
             </div>
@@ -134,16 +143,46 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
               <Input
                 type="number"
                 value={formData.attendeesCount}
-                onChange={(e) => setFormData({...formData, attendeesCount: parseInt(e.target.value)})}
+                onChange={(e) => setFormData({ ...formData, attendeesCount: parseInt(e.target.value) || 0 })}
                 required
               />
             </div>
+
+            <div className="md:col-span-2">
+              <Label>Description</Label>
+              <Textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Brief description about the event"
+                rows={3}
+                required
+              />
+            </div>
+
+            <div>
+              <Label>Faculty Name</Label>
+              <Input
+                value={formData.facultyName || profile?.name || ''}
+                onChange={(e) => setFormData({ ...formData, facultyName: e.target.value })}
+                required
+              />
+            </div>
+            <div>
+              <Label>Faculty Phone Number</Label>
+              <Input
+                type="tel"
+                value={formData.facultyPhone || (profile?.mobile_number ?? '')}
+                onChange={(e) => setFormData({ ...formData, facultyPhone: e.target.value })}
+                required
+              />
+            </div>
+
             <div>
               <Label>Event Date</Label>
               <Input
                 type="date"
                 value={formData.eventDate}
-                onChange={(e) => setFormData({...formData, eventDate: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
                 required
               />
             </div>
@@ -153,7 +192,7 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
                 <Input
                   type="time"
                   value={formData.startTime}
-                  onChange={(e) => setFormData({...formData, startTime: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
                   required
                 />
               </div>
@@ -162,10 +201,27 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
                 <Input
                   type="time"
                   value={formData.endTime}
-                  onChange={(e) => setFormData({...formData, endTime: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                   required
                 />
               </div>
+            </div>
+
+            <div>
+              <Label>No. of Guest Lecturers</Label>
+              <Input
+                type="number"
+                value={formData.guestLecturesCount}
+                onChange={(e) => setFormData({ ...formData, guestLecturesCount: parseInt(e.target.value) || 0 })}
+              />
+            </div>
+            <div>
+              <Label>Guest Lecturer Names</Label>
+              <Input
+                value={formData.guestLectureNames}
+                onChange={(e) => setFormData({ ...formData, guestLectureNames: e.target.value })}
+                placeholder="Comma separated names (optional)"
+              />
             </div>
           </div>
 

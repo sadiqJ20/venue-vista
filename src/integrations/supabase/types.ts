@@ -61,11 +61,13 @@ export type Database = {
           attendees_count: number
           created_at: string
           department: Database["public"]["Enums"]["department_name"]
+          description: string | null
           end_time: string
           event_date: string
           event_name: string
           faculty_id: string
           faculty_name: string
+          faculty_phone: string | null
           guest_lecture_names: string | null
           guest_lectures_count: number
           hall_id: string
@@ -87,11 +89,13 @@ export type Database = {
           attendees_count: number
           created_at?: string
           department: Database["public"]["Enums"]["department_name"]
+          description?: string | null
           end_time: string
           event_date: string
           event_name: string
           faculty_id: string
           faculty_name: string
+          faculty_phone?: string | null
           guest_lecture_names?: string | null
           guest_lectures_count: number
           hall_id: string
@@ -113,11 +117,13 @@ export type Database = {
           attendees_count?: number
           created_at?: string
           department?: Database["public"]["Enums"]["department_name"]
+          description?: string | null
           end_time?: string
           event_date?: string
           event_name?: string
           faculty_id?: string
           faculty_name?: string
+          faculty_phone?: string | null
           guest_lecture_names?: string | null
           guest_lectures_count?: number
           hall_id?: string

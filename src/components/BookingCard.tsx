@@ -12,11 +12,13 @@ import { useAuth } from "@/hooks/useAuth";
 interface Booking {
   id: string;
   faculty_name: string;
+  faculty_phone?: string;
   organizer_name: string;
   institution_type: string;
   guest_lectures_count: number;
   guest_lecture_names?: string;
   event_name: string;
+  description?: string;
   department: string;
   hod_name: string;
   event_date: string;
@@ -315,7 +317,21 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
                   <p className="font-medium">Guest Lectures</p>
                   <p className="text-sm text-muted-foreground">{booking.guest_lectures_count}</p>
                 </div>
+                <div>
+                  <p className="font-medium">Faculty Phone</p>
+                  <p className="text-sm text-muted-foreground">{booking.faculty_phone || '-'}</p>
+                </div>
+                <div>
+                  <p className="font-medium">Organizer</p>
+                  <p className="text-sm text-muted-foreground">{booking.organizer_name}</p>
+                </div>
               </div>
+              {booking.description && (
+                <div>
+                  <p className="font-medium">Description</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{booking.description}</p>
+                </div>
+              )}
               {booking.guest_lecture_names && (
                 <div>
                   <p className="font-medium">Guest Lecturers</p>

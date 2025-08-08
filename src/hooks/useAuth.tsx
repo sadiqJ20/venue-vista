@@ -118,21 +118,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (signUpError) return { error: signUpError };
 
-    // Try to sign in immediately (no email verification flow)
-    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    let authedUserId = signUpData.user?.id || null;
+    let authedEmail = signUpData.user?.email || email;
 
-    // If project still requires email confirmation and sign-in fails, surface the error
-    if (signInError && !signUpData.session) {
-      return { error: signInError };
+    // If signup did not create a session (email confirmation required), try sign-in once
+    if (!signUpData.session) {
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (signInError) {
+        // Treat as success but without session to avoid confusing error toast
+        // The project likely has email confirmations enabled in Supabase dashboard
+        return { error: null };
+      }
+      authedUserId = signInData.user?.id ?? authedUserId;
+      authedEmail = signInData.user?.email ?? authedEmail;
     }
 
     // Ensure profile exists/updated after auth
-    const authedUserId = signInData?.user?.id ?? signUpData.user?.id;
-    const authedEmail = signInData?.user?.email ?? signUpData.user?.email ?? email;
-
     if (authedUserId) {
       const { data: existing } = await supabase
         .from('profiles')
