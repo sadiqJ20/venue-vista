@@ -5,10 +5,12 @@ import { useToast } from "./use-toast";
 
 interface Notification {
   id: string;
+  title: string;
   message: string;
-  type: 'booking_approved' | 'booking_rejected' | 'new_booking';
-  created_at: string;
+  type: string;
+  data?: any;
   read: boolean;
+  created_at: string;
 }
 
 export const useNotifications = () => {
@@ -20,7 +22,38 @@ export const useNotifications = () => {
   useEffect(() => {
     if (!profile) return;
 
-    // Set up real-time subscription for bookings based on user role
+    // Fetch existing notifications
+    fetchNotifications();
+
+    // Set up real-time subscription for new notifications
+    const notificationChannel = supabase
+      .channel('user-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${profile.user_id}`
+        },
+        (payload) => {
+          const newNotification = payload.new as Notification;
+          
+          // Show toast notification
+          toast({
+            title: newNotification.title,
+            description: newNotification.message,
+            variant: newNotification.type === 'booking_rejected' ? "destructive" : "default"
+          });
+          
+          // Add to notifications list
+          setNotifications(prev => [newNotification, ...prev]);
+          setUnreadCount(prev => prev + 1);
+        }
+      )
+      .subscribe();
+
+    // Set up real-time subscription for bookings based on user role (legacy support)
     let channel: any;
 
     if (profile.role === 'faculty') {
@@ -63,6 +96,7 @@ export const useNotifications = () => {
               // Add to notifications list
               const notification: Notification = {
                 id: Date.now().toString(),
+                title: "Booking Update",
                 message,
                 type,
                 created_at: new Date().toISOString(),
@@ -99,6 +133,7 @@ export const useNotifications = () => {
 
             const notification: Notification = {
               id: Date.now().toString(),
+              title: "New Booking Request",
               message,
               type: 'new_booking',
               created_at: new Date().toISOString(),
@@ -137,6 +172,7 @@ export const useNotifications = () => {
 
               const notification: Notification = {
                 id: Date.now().toString(),
+                title: "Approval Required",
                 message,
                 type: 'new_booking',
                 created_at: new Date().toISOString(),
@@ -176,6 +212,7 @@ export const useNotifications = () => {
 
               const notification: Notification = {
                 id: Date.now().toString(),
+                title: "Final Approval Required",
                 message,
                 type: 'new_booking',
                 created_at: new Date().toISOString(),
@@ -194,6 +231,7 @@ export const useNotifications = () => {
       if (channel) {
         supabase.removeChannel(channel);
       }
+      supabase.removeChannel(notificationChannel);
     };
   }, [profile, toast]);
 
@@ -208,16 +246,48 @@ export const useNotifications = () => {
     }
   };
 
-  const markAsRead = (notificationId: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
-    );
-    setUnreadCount(prev => Math.max(0, prev - 1));
+  const fetchNotifications = async () => {
+    if (!profile?.user_id) return;
+
+    const { data, error } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('user_id', profile.user_id)
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setNotifications(data);
+      setUnreadCount(data.filter(n => !n.read).length);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-    setUnreadCount(0);
+  const markAsRead = async (notificationId: string) => {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('id', notificationId);
+
+    if (!error) {
+      setNotifications(prev => 
+        prev.map(n => n.id === notificationId ? { ...n, read: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    }
+  };
+
+  const markAllAsRead = async () => {
+    if (!profile?.user_id) return;
+
+    const { error } = await supabase
+      .from('notifications')
+      .update({ read: true })
+      .eq('user_id', profile.user_id)
+      .eq('read', false);
+
+    if (!error) {
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+    }
   };
 
   const clearNotifications = () => {

@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useHallAvailability } from "@/hooks/useHallAvailability";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, MapPin, Users, Plus, BookOpen, Bell, BellRing, LogOut, Search } from "lucide-react";
+import { Calendar, Clock, MapPin, Users, Plus, BookOpen, Bell, BellRing, LogOut, Search, AlertCircle } from "lucide-react";
 import BookingForm from "@/components/BookingForm";
 import BookingCard from "@/components/BookingCard";
 import { useToast } from "@/hooks/use-toast";
@@ -38,18 +39,17 @@ interface Booking {
 
 const FacultyDashboard = () => {
   const { profile, signOut } = useAuth();
-  const { notifications, unreadCount, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAllAsRead, markAsRead } = useNotifications();
+  const { halls, loading: hallsLoading, refreshAvailability } = useHallAvailability();
   const { toast } = useToast();
-  const [halls, setHalls] = useState<Hall[]>([]);
-  const [filteredHalls, setFilteredHalls] = useState<Hall[]>([]);
+  const [filteredHalls, setFilteredHalls] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [bookings, setBookings] = useState<any[]>([]);
   const [showBookingForm, setShowBookingForm] = useState(false);
-  const [selectedHall, setSelectedHall] = useState<Hall | null>(null);
+  const [selectedHall, setSelectedHall] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchHalls();
     if (profile) fetchBookings();
   }, [profile]);
 
@@ -62,23 +62,6 @@ const FacultyDashboard = () => {
     setFilteredHalls(filtered);
   }, [halls, searchTerm]);
 
-  const fetchHalls = async () => {
-    const { data, error } = await supabase
-      .from('halls')
-      .select('*')
-      .order('block', { ascending: true });
-
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch halls",
-        variant: "destructive"
-      });
-    } else {
-      setHalls(data || []);
-      setFilteredHalls(data || []);
-    }
-  };
 
   const fetchBookings = async () => {
     if (!profile?.id) return;
@@ -152,6 +135,7 @@ const FacultyDashboard = () => {
     setShowBookingForm(false);
     setSelectedHall(null);
     fetchBookings();
+    refreshAvailability();
     toast({
       title: "Success!",
       description: "Booking request submitted successfully",
@@ -255,42 +239,66 @@ const FacultyDashboard = () => {
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredHalls.map((hall) => (
-                <Card key={hall.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <MapPin className="h-5 w-5 text-primary" />
-                      {hall.name}
-                    </CardTitle>
-                    <CardDescription>
-                      {hall.block} • {hall.type}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Users className="h-4 w-4" />
-                      Capacity: {hall.capacity} people
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-2">
-                      {hall.has_ac && <Badge variant="secondary">AC</Badge>}
-                      {hall.has_mic && <Badge variant="secondary">Mic</Badge>}
-                      {hall.has_projector && <Badge variant="secondary">Projector</Badge>}
-                      {hall.has_audio_system && <Badge variant="secondary">Audio System</Badge>}
-                    </div>
-                    
-                    <Button 
-                      onClick={() => handleBookHall(hall)} 
-                      className="w-full"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Book Hall
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            {hallsLoading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Loading halls...
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredHalls.map((hall) => (
+                  <Card key={hall.id} className={`hover:shadow-lg transition-shadow ${!hall.isAvailable ? 'opacity-60' : ''}`}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <MapPin className="h-5 w-5 text-primary" />
+                        {hall.name}
+                        {!hall.isAvailable && (
+                          <Badge variant="destructive" className="ml-auto">
+                            Booked
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      <CardDescription>
+                        {hall.block} • {hall.type}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Users className="h-4 w-4" />
+                        Capacity: {hall.capacity} people
+                      </div>
+                      
+                      {!hall.isAvailable && hall.currentBooking && (
+                        <div className="p-2 bg-destructive/10 rounded border border-destructive/20">
+                          <div className="flex items-center gap-2 text-sm text-destructive">
+                            <AlertCircle className="h-4 w-4" />
+                            <span>Booked until {hall.bookedUntil}</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {hall.currentBooking.event_name} by {hall.currentBooking.faculty_name}
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="flex flex-wrap gap-2">
+                        {hall.has_ac && <Badge variant="secondary">AC</Badge>}
+                        {hall.has_mic && <Badge variant="secondary">Mic</Badge>}
+                        {hall.has_projector && <Badge variant="secondary">Projector</Badge>}
+                        {hall.has_audio_system && <Badge variant="secondary">Audio System</Badge>}
+                      </div>
+                      
+                      <Button 
+                        onClick={() => handleBookHall(hall)} 
+                        className="w-full"
+                        disabled={!hall.isAvailable}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        {hall.isAvailable ? "Book Hall" : "Currently Booked"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="bookings" className="space-y-6">
@@ -334,23 +342,36 @@ const FacultyDashboard = () => {
               </Card>
             ) : (
               <div className="space-y-4">
-                {notifications.map((notification) => (
-                  <Card key={notification.id} className={notification.read ? 'opacity-60' : ''}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-sm">{notification.message}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {new Date(notification.created_at).toLocaleString()}
-                          </p>
-                        </div>
-                        {!notification.read && (
-                          <Badge variant="secondary">New</Badge>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                 {notifications.map((notification) => (
+                   <Card key={notification.id} className={notification.read ? 'opacity-60' : ''}>
+                     <CardContent className="p-4">
+                       <div className="flex items-start justify-between">
+                         <div className="flex-1">
+                           <h4 className="font-medium text-sm">{notification.title}</h4>
+                           <p className="text-sm text-muted-foreground mt-1">{notification.message}</p>
+                           <p className="text-xs text-muted-foreground mt-2">
+                             {new Date(notification.created_at).toLocaleString()}
+                           </p>
+                         </div>
+                         <div className="flex flex-col gap-2">
+                           {!notification.read && (
+                             <Badge variant="secondary">New</Badge>
+                           )}
+                           {!notification.read && (
+                             <Button 
+                               variant="ghost" 
+                               size="sm" 
+                               onClick={() => markAsRead(notification.id)}
+                               className="text-xs"
+                             >
+                               Mark Read
+                             </Button>
+                           )}
+                         </div>
+                       </div>
+                     </CardContent>
+                   </Card>
+                 ))}
               </div>
             )}
           </TabsContent>

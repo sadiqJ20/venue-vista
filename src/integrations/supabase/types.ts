@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
@@ -70,11 +70,14 @@ export type Database = {
           faculty_phone: string | null
           guest_lecture_names: string | null
           guest_lectures_count: number
+          hall_change_reason: string | null
+          hall_changed_by: string | null
           hall_id: string
           hod_name: string
           id: string
           institution_type: Database["public"]["Enums"]["institution_type"]
           organizer_name: string
+          original_hall_id: string | null
           rejection_reason: string | null
           required_ac: boolean | null
           required_audio_system: boolean | null
@@ -98,11 +101,14 @@ export type Database = {
           faculty_phone?: string | null
           guest_lecture_names?: string | null
           guest_lectures_count: number
+          hall_change_reason?: string | null
+          hall_changed_by?: string | null
           hall_id: string
           hod_name: string
           id?: string
           institution_type: Database["public"]["Enums"]["institution_type"]
           organizer_name: string
+          original_hall_id?: string | null
           rejection_reason?: string | null
           required_ac?: boolean | null
           required_audio_system?: boolean | null
@@ -126,11 +132,14 @@ export type Database = {
           faculty_phone?: string | null
           guest_lecture_names?: string | null
           guest_lectures_count?: number
+          hall_change_reason?: string | null
+          hall_changed_by?: string | null
           hall_id?: string
           hod_name?: string
           id?: string
           institution_type?: Database["public"]["Enums"]["institution_type"]
           organizer_name?: string
+          original_hall_id?: string | null
           rejection_reason?: string | null
           required_ac?: boolean | null
           required_audio_system?: boolean | null
@@ -200,6 +209,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json | null
+          id: string
+          message: string
+          read: boolean | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          message: string
+          read?: boolean | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -247,7 +289,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_hall_available: {
+        Args: {
+          end_time_param: string
+          event_date_param: string
+          exclude_booking_id?: string
+          hall_id_param: string
+          start_time_param: string
+        }
+        Returns: boolean
+      }
+      send_notification: {
+        Args: {
+          data_param?: Json
+          message_param: string
+          title_param: string
+          type_param: string
+          user_id_param: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       block_name: "East Block" | "West Block" | "Main Block" | "Diploma Block"

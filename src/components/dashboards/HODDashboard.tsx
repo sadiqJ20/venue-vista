@@ -1,19 +1,24 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useHallAvailability } from "@/hooks/useHallAvailability";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, UserCheck, Bell, BellRing } from "lucide-react";
+import { LogOut, UserCheck, Bell, BellRing, MapPin, Users, AlertCircle, ArrowRightLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import BookingCard from "@/components/BookingCard";
+import HallSwitchDialog from "@/components/HallSwitchDialog";
 
 const HODDashboard = () => {
   const { profile, signOut } = useAuth();
   const { notifications, unreadCount, markAllAsRead } = useNotifications();
+  const { halls, loading: hallsLoading, refreshAvailability } = useHallAvailability();
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showSwitchDialog, setShowSwitchDialog] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState<any>(null);
 
   const fetchBookings = async () => {
     if (!profile) return;
@@ -46,6 +51,18 @@ const HODDashboard = () => {
   useEffect(() => {
     fetchBookings();
   }, [profile]);
+
+  const handleSwitchHall = (booking: any) => {
+    setSelectedBooking(booking);
+    setShowSwitchDialog(true);
+  };
+
+  const handleSwitchSuccess = () => {
+    fetchBookings();
+    refreshAvailability();
+    setShowSwitchDialog(false);
+    setSelectedBooking(null);
+  };
 
   const pendingBookings = bookings.filter(b => b.status === 'pending_hod');
   const acceptedBookings = bookings.filter(b => ['pending_principal', 'pending_pro', 'approved'].includes(b.status));
@@ -119,27 +136,29 @@ const HODDashboard = () => {
           </Card>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserCheck className="h-5 w-5" />
-              Department Booking Requests
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="pending" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="pending" className="relative">
-                  Pending
-                  {pendingBookings.length > 0 && (
-                    <Badge className="ml-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                      {pendingBookings.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
-                <TabsTrigger value="accepted">Accepted</TabsTrigger>
-                <TabsTrigger value="rejected">Rejected</TabsTrigger>
-              </TabsList>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Booking Requests */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserCheck className="h-5 w-5" />
+                Department Booking Requests
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="pending" className="w-full">
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="pending" className="relative">
+                    Pending
+                    {pendingBookings.length > 0 && (
+                      <Badge className="ml-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                        {pendingBookings.length}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
+                  <TabsTrigger value="accepted">Accepted</TabsTrigger>
+                  <TabsTrigger value="rejected">Rejected</TabsTrigger>
+                </TabsList>
               
               <TabsContent value="pending" className="mt-6">
                 {loading ? (
@@ -149,13 +168,23 @@ const HODDashboard = () => {
                 ) : (
                   <div className="space-y-4">
                     {pendingBookings.map(booking => (
-                      <BookingCard
-                        key={booking.id}
-                        booking={booking}
-                        onStatusUpdate={fetchBookings}
-                        showActions={true}
-                        userRole="hod"
-                      />
+                      <div key={booking.id} className="space-y-2">
+                        <BookingCard
+                          booking={booking}
+                          onStatusUpdate={fetchBookings}
+                          showActions={true}
+                          userRole="hod"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSwitchHall(booking)}
+                          className="w-full"
+                        >
+                          <ArrowRightLeft className="h-4 w-4 mr-2" />
+                          Switch Hall
+                        </Button>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -167,7 +196,18 @@ const HODDashboard = () => {
                 ) : (
                   <div className="space-y-4">
                     {acceptedBookings.map(booking => (
-                      <BookingCard key={booking.id} booking={booking} />
+                      <div key={booking.id} className="space-y-2">
+                        <BookingCard booking={booking} />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleSwitchHall(booking)}
+                          className="w-full"
+                        >
+                          <ArrowRightLeft className="h-4 w-4 mr-2" />
+                          Switch Hall
+                        </Button>
+                      </div>
                     ))}
                   </div>
                 )}
@@ -187,7 +227,98 @@ const HODDashboard = () => {
             </Tabs>
           </CardContent>
         </Card>
+
+        {/* Hall Status */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              Hall Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="available" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="available">Available Halls</TabsTrigger>
+                <TabsTrigger value="booked">Booked Halls</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="available" className="mt-6">
+                {hallsLoading ? (
+                  <p className="text-center text-muted-foreground py-8">Loading halls...</p>
+                ) : (
+                  <div className="space-y-4">
+                    {halls.filter(hall => hall.isAvailable).map(hall => (
+                      <Card key={hall.id} className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="font-medium">{hall.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {hall.block} • {hall.type} • Capacity: {hall.capacity}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className="text-green-600 border-green-600">
+                            Available
+                          </Badge>
+                        </div>
+                      </Card>
+                    ))}
+                    {halls.filter(hall => hall.isAvailable).length === 0 && (
+                      <p className="text-center text-muted-foreground py-8">All halls are currently booked</p>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="booked" className="mt-6">
+                {hallsLoading ? (
+                  <p className="text-center text-muted-foreground py-8">Loading halls...</p>
+                ) : (
+                  <div className="space-y-4">
+                    {halls.filter(hall => !hall.isAvailable).map(hall => (
+                      <Card key={hall.id} className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-medium">{hall.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {hall.block} • {hall.type} • Capacity: {hall.capacity}
+                            </p>
+                            {hall.currentBooking && (
+                              <div className="mt-2 p-2 bg-muted rounded">
+                                <p className="text-sm font-medium">{hall.currentBooking.event_name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  by {hall.currentBooking.faculty_name} • Until {hall.bookedUntil}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                          <Badge variant="destructive">
+                            Booked
+                          </Badge>
+                        </div>
+                      </Card>
+                    ))}
+                    {halls.filter(hall => !hall.isAvailable).length === 0 && (
+                      <p className="text-center text-muted-foreground py-8">No halls are currently booked</p>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+        </div>
       </div>
+
+      {/* Hall Switch Dialog */}
+      {showSwitchDialog && selectedBooking && (
+        <HallSwitchDialog
+          booking={selectedBooking}
+          open={showSwitchDialog}
+          onClose={() => setShowSwitchDialog(false)}
+          onSuccess={handleSwitchSuccess}
+        />
+      )}
     </div>
   );
 };
