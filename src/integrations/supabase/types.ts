@@ -167,6 +167,45 @@ export type Database = {
           },
         ]
       }
+      email_logs: {
+        Row: {
+          body: string
+          booking_id: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          notification_type: string
+          recipient_email: string
+          sent_at: string
+          status: string
+          subject: string
+        }
+        Insert: {
+          body: string
+          booking_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          notification_type: string
+          recipient_email: string
+          sent_at?: string
+          status?: string
+          subject: string
+        }
+        Update: {
+          body?: string
+          booking_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          notification_type?: string
+          recipient_email?: string
+          sent_at?: string
+          status?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       halls: {
         Row: {
           block: Database["public"]["Enums"]["block_name"]
