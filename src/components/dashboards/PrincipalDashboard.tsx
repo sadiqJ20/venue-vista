@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { LogOut, GraduationCap, Bell, BellRing } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import BookingCard from "@/components/BookingCard";
+import { NotificationCenter } from "@/components/NotificationCenter";
 
 const PrincipalDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -58,14 +59,7 @@ const PrincipalDashboard = () => {
             <p className="text-muted-foreground">Welcome back, {profile?.name}</p>
           </div>
           <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" onClick={markAllAsRead} className="relative">
-              {unreadCount > 0 ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
-              {unreadCount > 0 && (
-                <Badge className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                  {unreadCount}
-                </Badge>
-              )}
-            </Button>
+            <NotificationCenter />
             <Button variant="outline" onClick={signOut} size="sm">
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
