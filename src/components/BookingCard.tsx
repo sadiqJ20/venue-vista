@@ -8,6 +8,7 @@ import { Calendar, Clock, Users, MapPin, CheckCircle, XCircle, Eye } from "lucid
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import type { Database } from "@/integrations/supabase/types";
 
 interface Booking {
   id: string;
@@ -72,12 +73,12 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
     }
   };
 
-  const getNextStatus = (currentStatus: string) => {
+  const getNextStatus = (currentStatus: string): Database['public']['Enums']['booking_status'] => {
     switch (currentStatus) {
       case 'pending_hod': return 'pending_principal';
       case 'pending_principal': return 'pending_pro';
       case 'pending_pro': return 'approved';
-      default: return currentStatus;
+      default: return currentStatus as Database['public']['Enums']['booking_status'];
     }
   };
 
@@ -91,7 +92,7 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
       // Update booking status
       const { error: bookingError } = await supabase
         .from('bookings')
-        .update({ status: nextStatus as any })
+        .update({ status: nextStatus })
         .eq('id', booking.id);
 
       if (bookingError) throw bookingError;

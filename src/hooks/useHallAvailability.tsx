@@ -57,13 +57,21 @@ export const useHallAvailability = () => {
           if (booking.hall_id !== hall.id) return false;
           
           const bookingDate = new Date(booking.event_date);
-          const bookingEndTime = new Date(`${booking.event_date}T${booking.end_time}`);
+          const now = new Date();
           
-          // Check if booking is currently active (event date is today and end time hasn't passed)
+          // Check if booking is for today or future dates
+          const isTodayOrFuture = bookingDate >= new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          if (!isTodayOrFuture) return false;
+          
+          // For today's bookings, check if end time hasn't passed
           const isToday = bookingDate.toDateString() === now.toDateString();
-          const isActive = isToday && bookingEndTime > now;
+          if (isToday) {
+            const bookingEndTime = new Date(`${booking.event_date}T${booking.end_time}`);
+            return bookingEndTime > now;
+          }
           
-          return isActive;
+          // For future dates, booking is active
+          return true;
         });
 
         return {

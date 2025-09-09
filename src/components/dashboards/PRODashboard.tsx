@@ -30,7 +30,7 @@ const PRODashboard = () => {
             capacity
           )
         `)
-        .in('status', ['pending_pro', 'approved'])
+        .in('status', ['pending_pro', 'approved', 'rejected'])
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -48,6 +48,7 @@ const PRODashboard = () => {
 
   const pendingBookings = bookings.filter(b => b.status === 'pending_pro');
   const approvedBookings = bookings.filter(b => b.status === 'approved');
+  const rejectedBookings = bookings.filter(b => b.status === 'rejected');
 
   return (
     <div className="min-h-screen bg-background">
@@ -68,7 +69,7 @@ const PRODashboard = () => {
       </header>
       
       <div className="container mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -95,6 +96,19 @@ const PRODashboard = () => {
               </div>
             </CardContent>
           </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Rejected Bookings</p>
+                  <p className="text-2xl font-bold">{rejectedBookings.length}</p>
+                </div>
+                <div className="h-8 w-8 bg-red-500/10 rounded-full flex items-center justify-center">
+                  <Briefcase className="h-4 w-4 text-red-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Card>
@@ -106,7 +120,7 @@ const PRODashboard = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="pending" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="pending" className="relative">
                   Pending Final Approval
                   {pendingBookings.length > 0 && (
@@ -116,6 +130,7 @@ const PRODashboard = () => {
                   )}
                 </TabsTrigger>
                 <TabsTrigger value="approved">Confirmed Bookings</TabsTrigger>
+                <TabsTrigger value="rejected">Rejected Bookings</TabsTrigger>
               </TabsList>
               
               <TabsContent value="pending" className="mt-6">
@@ -144,6 +159,18 @@ const PRODashboard = () => {
                 ) : (
                   <div className="space-y-4">
                     {approvedBookings.map(booking => (
+                      <BookingCard key={booking.id} booking={booking} />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="rejected" className="mt-6">
+                {rejectedBookings.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">No rejected bookings</p>
+                ) : (
+                  <div className="space-y-4">
+                    {rejectedBookings.map(booking => (
                       <BookingCard key={booking.id} booking={booking} />
                     ))}
                   </div>

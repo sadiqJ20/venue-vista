@@ -72,7 +72,7 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
         start_time: formData.startTime,
         end_time: formData.endTime,
         attendees_count: formData.attendeesCount,
-        student_years: formData.studentYears,
+        student_years: formData.studentYears.length > 0 ? formData.studentYears : null,
         required_ac: formData.requiredAC,
         required_mic: formData.requiredMic,
         required_projector: formData.requiredProjector,

@@ -13,8 +13,6 @@ import BookingForm from "@/components/BookingForm";
 import BookingCard from "@/components/BookingCard";
 import { useToast } from "@/hooks/use-toast";
 import { NotificationCenter } from "@/components/NotificationCenter";
-import { EmailTestButton } from "@/components/EmailTestButton";
-
 interface Hall {
   id: string;
   name: string;
@@ -154,7 +152,6 @@ const FacultyDashboard = () => {
             <p className="text-muted-foreground">Welcome back, {profile?.name} • {profile?.department} Department</p>
           </div>
           <div className="flex items-center gap-4">
-            <EmailTestButton />
             <NotificationCenter />
             <Button variant="outline" onClick={signOut} size="sm">
               <LogOut className="h-4 w-4 mr-2" />
