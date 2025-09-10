@@ -73,12 +73,12 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
     }
   };
 
-  const getNextStatus = (currentStatus: string): Database['public']['Enums']['booking_status'] => {
+  const getNextStatus = (currentStatus: string) => {
     switch (currentStatus) {
-      case 'pending_hod': return 'pending_principal';
-      case 'pending_principal': return 'pending_pro';
-      case 'pending_pro': return 'approved';
-      default: return currentStatus as Database['public']['Enums']['booking_status'];
+      case 'pending_hod': return 'pending_principal' as const;
+      case 'pending_principal': return 'pending_pro' as const;
+      case 'pending_pro': return 'approved' as const;
+      default: return currentStatus as any;
     }
   };
 
@@ -337,16 +337,6 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
                 <div>
                   <p className="font-medium">Guest Lecturers</p>
                   <p className="text-sm text-muted-foreground">{booking.guest_lecture_names}</p>
-                </div>
-              )}
-              {booking.student_years && booking.student_years.length > 0 && (
-                <div>
-                  <p className="font-medium">Student Years</p>
-                  <div className="flex gap-2 mt-1">
-                    {booking.student_years.map(year => (
-                      <Badge key={year} variant="outline">{year}</Badge>
-                    ))}
-                  </div>
                 </div>
               )}
               <div>
