@@ -54,7 +54,8 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.from('bookings').insert({
+      // Create sanitized booking payload (explicitly exclude any unwanted fields)
+      const bookingPayload = {
         faculty_id: profile.id,
         hall_id: hall.id,
         faculty_name: formData.facultyName || profile.name,
@@ -75,11 +76,23 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
         required_mic: formData.requiredMic,
         required_projector: formData.requiredProjector,
         required_audio_system: formData.requiredAudioSystem
-      });
+      };
+
+      console.log('Submitting booking payload:', bookingPayload);
+      
+      const { error } = await supabase.from('bookings').insert(bookingPayload);
 
       if (error) throw error;
+      
+      console.log('Booking submitted successfully');
+      toast({
+        title: "Success",
+        description: "Booking request submitted successfully! It will be reviewed by your HOD.",
+        variant: "default"
+      });
       onSuccess();
     } catch (error: any) {
+      console.error('Booking submission error:', error);
       toast({
         title: "Error",
         description: error.message,

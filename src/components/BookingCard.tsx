@@ -87,6 +87,7 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
 
     try {
       const nextStatus = getNextStatus(booking.status);
+      console.log(`Approving booking ${booking.id} from ${booking.status} to ${nextStatus}`);
       
       // Update booking status
       const { error: bookingError } = await supabase
@@ -107,6 +108,7 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
 
       if (approvalError) throw approvalError;
 
+      console.log(`Booking ${booking.id} approved successfully`);
       toast({
         title: "Success",
         description: "Booking approved successfully",
@@ -115,6 +117,7 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
       
       onStatusUpdate?.();
     } catch (error: any) {
+      console.error('Approval error:', error);
       toast({
         title: "Error",
         description: error.message,
@@ -130,6 +133,8 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
     setLoading(true);
 
     try {
+      console.log(`Rejecting booking ${booking.id} with reason: ${rejectionReason}`);
+      
       // Update booking status and rejection reason
       const { error: bookingError } = await supabase
         .from('bookings')
@@ -153,6 +158,7 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
 
       if (approvalError) throw approvalError;
 
+      console.log(`Booking ${booking.id} rejected successfully`);
       toast({
         title: "Booking Rejected",
         description: "Rejection reason has been sent to faculty",
@@ -163,6 +169,7 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
       setRejectionReason("");
       onStatusUpdate?.();
     } catch (error: any) {
+      console.error('Rejection error:', error);
       toast({
         title: "Error",
         description: error.message,

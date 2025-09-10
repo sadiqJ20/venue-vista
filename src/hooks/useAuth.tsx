@@ -199,11 +199,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
+      console.log('Signing out user...');
       await supabase.auth.signOut();
+      
+      // Clear any local storage items related to auth
+      localStorage.clear();
+      sessionStorage.clear();
+      
       // Force reload to clear all state and redirect to auth
       window.location.href = '/auth';
     } catch (error) {
       console.error('Error signing out:', error);
+      // Even if signOut fails, clear storage and redirect
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.href = '/auth';
     }
   };
 

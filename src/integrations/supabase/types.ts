@@ -85,7 +85,6 @@ export type Database = {
           required_projector: boolean | null
           start_time: string
           status: Database["public"]["Enums"]["booking_status"]
-          student_years: string[] | null
           updated_at: string
         }
         Insert: {
@@ -116,7 +115,6 @@ export type Database = {
           required_projector?: boolean | null
           start_time: string
           status?: Database["public"]["Enums"]["booking_status"]
-          student_years?: string[] | null
           updated_at?: string
         }
         Update: {
@@ -147,7 +145,6 @@ export type Database = {
           required_projector?: boolean | null
           start_time?: string
           status?: Database["public"]["Enums"]["booking_status"]
-          student_years?: string[] | null
           updated_at?: string
         }
         Relationships: [
