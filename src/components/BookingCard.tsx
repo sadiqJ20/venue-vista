@@ -26,7 +26,6 @@ interface Booking {
   start_time: string;
   end_time: string;
   attendees_count: number;
-  student_years?: string[];
   required_ac: boolean;
   required_mic: boolean;
   required_projector: boolean;
