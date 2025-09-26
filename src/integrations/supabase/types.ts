@@ -252,6 +252,7 @@ export type Database = {
           id: string
           message: string
           read: boolean | null
+          recipient_profile_id: string | null
           title: string
           type: string
           user_id: string
@@ -262,6 +263,7 @@ export type Database = {
           id?: string
           message: string
           read?: boolean | null
+          recipient_profile_id?: string | null
           title: string
           type: string
           user_id: string
@@ -272,11 +274,20 @@ export type Database = {
           id?: string
           message?: string
           read?: boolean | null
+          recipient_profile_id?: string | null
           title?: string
           type?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_recipient_profile_id_fkey"
+            columns: ["recipient_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -325,6 +336,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_available_halls: {
+        Args: { p_end: string; p_event_date: string; p_start: string }
+        Returns: {
+          block: Database["public"]["Enums"]["block_name"]
+          capacity: number
+          created_at: string
+          has_ac: boolean | null
+          has_audio_system: boolean | null
+          has_mic: boolean | null
+          has_projector: boolean | null
+          id: string
+          name: string
+          type: Database["public"]["Enums"]["hall_type"]
+          updated_at: string
+        }[]
+      }
       is_hall_available: {
         Args: {
           end_time_param: string
@@ -344,6 +371,19 @@ export type Database = {
           user_id_param: string
         }
         Returns: string
+      }
+      switch_booking_hall: {
+        Args: {
+          p_booking_id: string
+          p_new_end?: string
+          p_new_hall_id: string
+          p_new_start?: string
+        }
+        Returns: {
+          booking_id: string
+          new_hall_id: string
+          old_hall_id: string
+        }[]
       }
     }
     Enums: {
