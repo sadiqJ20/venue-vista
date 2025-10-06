@@ -17,6 +17,11 @@ export const NotificationCenter = () => {
         return <Check className="h-4 w-4 text-green-500" />;
       case 'booking_rejected':
         return <X className="h-4 w-4 text-red-500" />;
+      case 'new_booking_request':
+      case 'approval_required':
+        return <Bell className="h-4 w-4 text-orange-500" />;
+      case 'hall_changed':
+        return <Bell className="h-4 w-4 text-purple-500" />;
       default:
         return <Bell className="h-4 w-4 text-blue-500" />;
     }
@@ -28,6 +33,11 @@ export const NotificationCenter = () => {
         return 'success';
       case 'booking_rejected':
         return 'destructive';
+      case 'new_booking_request':
+      case 'approval_required':
+        return 'default';
+      case 'hall_changed':
+        return 'default';
       default:
         return 'default';
     }
