@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,273 +10,416 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useHallAvailability } from "@/hooks/useHallAvailability";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Hall {
-  id: string;
-  name: string;
-  block: string;
-  type: string;
-  capacity: number;
+	id: string;
+	name: string;
+	block: string;
+	type: string;
+	capacity: number;
 }
 
 interface BookingFormProps {
-  hall: Hall;
-  onClose: () => void;
-  onSuccess: () => void;
+	hall: Hall;
+	onClose: () => void;
+	onSuccess: () => void;
 }
 
+const alphaOnly = (value: string) => value.replace(/[^a-zA-Z\s]/g, "");
+const alphaCommaOnly = (value: string) => value.replace(/[^a-zA-Z,\s]/g, "");
+const digitsOnly = (value: string) => value.replace(/\D/g, "");
+const toTodayYMD = () => {
+	const d = new Date();
+	d.setHours(0, 0, 0, 0);
+	return d.toISOString().split("T")[0];
+};
+const isTimeWithinWindow = (time: string) => time >= "08:00" && time <= "18:00";
+
 const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
-  const { profile } = useAuth();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    organizerName: '',
-    facultyName: '',
-    facultyPhone: '',
-    institutionType: '',
-    guestLecturesCount: 0,
-    guestLectureNames: '',
-    eventName: '',
-    description: '',
-    eventDate: '',
-    startTime: '',
-    endTime: '',
-    attendeesCount: 0,
-    requiredAC: false,
-    requiredMic: false,
-    requiredProjector: false,
-    requiredAudioSystem: false
-  });
+	const { profile } = useAuth();
+	const { toast } = useToast();
+	const { checkHallAvailability, getHallAvailabilityStatus } = useHallAvailability();
+	const [loading, setLoading] = useState(false);
+	const [checkingAvailability, setCheckingAvailability] = useState(false);
+	const [isAvailable, setIsAvailable] = useState<boolean | undefined>(undefined);
+	const [availabilityMsg, setAvailabilityMsg] = useState<string>("");
+	const [formData, setFormData] = useState({
+		organizerName: '',
+		facultyName: '',
+		facultyPhone: '',
+		institutionType: '',
+		guestLecturesCount: 0,
+		guestLectureNames: '',
+		eventName: '',
+		description: '',
+		eventDate: '',
+		startTime: '',
+		endTime: '',
+		attendeesCount: 0,
+		requiredAC: false,
+		requiredMic: false,
+		requiredProjector: false,
+		requiredAudioSystem: false
+	});
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!profile) return;
+	const validateForm = (): boolean => {
+		// Names: letters and spaces only
+		if (!formData.organizerName.trim() || /[^a-zA-Z\s]/.test(formData.organizerName)) {
+			toast({ title: "Invalid organizer name", description: "Use letters and spaces only.", variant: "destructive" });
+			return false;
+		}
+		if (!formData.eventName.trim() || /[^a-zA-Z\s]/.test(formData.eventName)) {
+			toast({ title: "Invalid event name", description: "Use letters and spaces only.", variant: "destructive" });
+			return false;
+		}
+		if ((formData.facultyName || profile?.name || '').toString().trim() === '' ) {
+			toast({ title: "Invalid faculty name", description: "Faculty name is required.", variant: "destructive" });
+			return false;
+		}
 
-    setLoading(true);
-    try {
-      // Create sanitized booking payload (explicitly exclude any unwanted fields)
-      const bookingPayload = {
-        faculty_id: profile.id,
-        hall_id: hall.id,
-        faculty_name: formData.facultyName || profile.name,
-        faculty_phone: formData.facultyPhone || (profile as any)?.mobile_number,
-        organizer_name: formData.organizerName,
-        institution_type: formData.institutionType as any,
-        guest_lectures_count: formData.guestLecturesCount,
-        guest_lecture_names: formData.guestLectureNames,
-        event_name: formData.eventName,
-        description: formData.description,
-        department: profile.department!,
-        hod_name: 'Auto-filled HOD',
-        event_date: formData.eventDate,
-        start_time: formData.startTime,
-        end_time: formData.endTime,
-        attendees_count: formData.attendeesCount,
-        required_ac: formData.requiredAC,
-        required_mic: formData.requiredMic,
-        required_projector: formData.requiredProjector,
-        required_audio_system: formData.requiredAudioSystem
-      };
+		// Phone: digits only 7-15
+		const phone = (formData.facultyPhone || (profile as any)?.mobile_number || '').toString();
+		const phoneDigits = phone.replace(/\D/g, '');
+		if (phoneDigits.length < 7 || phoneDigits.length > 15) {
+			toast({ title: "Invalid phone number", description: "Enter a valid phone number (7-15 digits).", variant: "destructive" });
+			return false;
+		}
 
-      console.log('Submitting booking payload:', bookingPayload);
-      
-      const { error } = await supabase.from('bookings').insert(bookingPayload);
+		// Attendees: at least 1
+		if (!formData.attendeesCount || formData.attendeesCount < 1) {
+			toast({ title: "Invalid attendees", description: "Attendees must be at least 1.", variant: "destructive" });
+			return false;
+		}
 
-      if (error) throw error;
-      
-      console.log('Booking submitted successfully');
-      toast({
-        title: "Success",
-        description: "Booking request submitted successfully! It will be reviewed by your HOD.",
-        variant: "default"
-      });
-      onSuccess();
-    } catch (error: any) {
-      console.error('Booking submission error:', error);
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+		// Date: today or future
+		if (!formData.eventDate || formData.eventDate < toTodayYMD()) {
+			toast({ title: "Invalid date", description: "Choose today or a future date.", variant: "destructive" });
+			return false;
+		}
 
-  return (
-    <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Book {hall.name}</DialogTitle>
-          <DialogDescription>
-            Provide event details and equipment needs. HOD, Principal and PRO will see this request.
-          </DialogDescription>
-          <Button variant="ghost" size="sm" onClick={onClose} className="absolute right-4 top-4">
-            <X className="h-4 w-4" />
-          </Button>
-        </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label>Organizer Name</Label>
-              <Input
-                value={formData.organizerName}
-                onChange={(e) => setFormData({ ...formData, organizerName: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <Label>Institution Type</Label>
-              <Select value={formData.institutionType} onValueChange={(value) => setFormData({ ...formData, institutionType: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select institution" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="School">School</SelectItem>
-                  <SelectItem value="Diploma">Diploma</SelectItem>
-                  <SelectItem value="Polytechnic">Polytechnic</SelectItem>
-                  <SelectItem value="Engineering">Engineering</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+		// Time window and ordering
+		if (!isTimeWithinWindow(formData.startTime) || !isTimeWithinWindow(formData.endTime)) {
+			toast({ title: "Invalid time", description: "Time must be between 08:00 and 18:00.", variant: "destructive" });
+			return false;
+		}
+		if (formData.startTime >= formData.endTime) {
+			toast({ title: "Invalid time range", description: "End time must be after start time.", variant: "destructive" });
+			return false;
+		}
 
-            <div>
-              <Label>Event Name</Label>
-              <Input
-                value={formData.eventName}
-                onChange={(e) => setFormData({ ...formData, eventName: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <Label>No. of Attendees</Label>
-              <Input
-                type="number"
-                value={formData.attendeesCount}
-                onChange={(e) => setFormData({ ...formData, attendeesCount: parseInt(e.target.value) || 0 })}
-                required
-              />
-            </div>
+		// Guest lecturers count non-negative
+		if (formData.guestLecturesCount < 0) {
+			toast({ title: "Invalid guest lecturer count", description: "Value cannot be negative.", variant: "destructive" });
+			return false;
+		}
 
-            <div className="md:col-span-2">
-              <Label>Description</Label>
-              <Textarea
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                placeholder="Brief description about the event"
-                rows={3}
-                required
-              />
-            </div>
+		return true;
+	};
 
-            <div>
-              <Label>Faculty Name</Label>
-              <Input
-                value={formData.facultyName || profile?.name || ''}
-                onChange={(e) => setFormData({ ...formData, facultyName: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <Label>Faculty Phone Number</Label>
-              <Input
-                type="tel"
-                value={formData.facultyPhone || (profile?.mobile_number ?? '')}
-                onChange={(e) => setFormData({ ...formData, facultyPhone: e.target.value })}
-                required
-              />
-            </div>
+	const recheckAvailability = async () => {
+		// Only check when required fields present
+		if (!hall?.id || !formData.eventDate || !formData.startTime || !formData.endTime) {
+			setIsAvailable(undefined);
+			setAvailabilityMsg("");
+			return;
+		}
+		if (!validateForm()) return; // basic guards like time window
+		try {
+			setCheckingAvailability(true);
+			const status = await getHallAvailabilityStatus(hall.id, formData.eventDate, formData.startTime, formData.endTime);
+			setIsAvailable(status.available);
+			setAvailabilityMsg(status.reason);
+		} catch (e) {
+			setIsAvailable(undefined);
+			setAvailabilityMsg("Could not verify availability. Try again.");
+		} finally {
+			setCheckingAvailability(false);
+		}
+	};
 
-            <div>
-              <Label>Event Date</Label>
-              <Input
-                type="date"
-                value={formData.eventDate}
-                onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
-                required
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label>Start Time</Label>
-                <Input
-                  type="time"
-                  value={formData.startTime}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label>End Time</Label>
-                <Input
-                  type="time"
-                  value={formData.endTime}
-                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                  required
-                />
-              </div>
-            </div>
+	useEffect(() => {
+		// Debounce checks on date/time changes
+		const t = setTimeout(recheckAvailability, 300);
+		return () => clearTimeout(t);
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [hall?.id, formData.eventDate, formData.startTime, formData.endTime]);
 
-            <div>
-              <Label>No. of Guest Lecturers</Label>
-              <Input
-                type="number"
-                value={formData.guestLecturesCount}
-                onChange={(e) => setFormData({ ...formData, guestLecturesCount: parseInt(e.target.value) || 0 })}
-              />
-            </div>
-            <div>
-              <Label>Guest Lecturer Names</Label>
-              <Input
-                value={formData.guestLectureNames}
-                onChange={(e) => setFormData({ ...formData, guestLectureNames: e.target.value })}
-                placeholder="Comma separated names (optional)"
-              />
-            </div>
-          </div>
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!profile) return;
 
-          <div>
-            <Label>Required Systems</Label>
-            <div className="grid grid-cols-2 gap-4 mt-2">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  checked={formData.requiredAC}
-                  onCheckedChange={(checked) => setFormData({...formData, requiredAC: !!checked})}
-                />
-                <Label>AC</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  checked={formData.requiredMic}
-                  onCheckedChange={(checked) => setFormData({...formData, requiredMic: !!checked})}
-                />
-                <Label>Microphone</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  checked={formData.requiredProjector}
-                  onCheckedChange={(checked) => setFormData({...formData, requiredProjector: !!checked})}
-                />
-                <Label>Projector</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  checked={formData.requiredAudioSystem}
-                  onCheckedChange={(checked) => setFormData({...formData, requiredAudioSystem: !!checked})}
-                />
-                <Label>Audio System</Label>
-              </div>
-            </div>
-          </div>
+		if (!validateForm()) return;
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Submitting..." : "Submit Booking Request"}
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
+		// Final availability check before submit
+		setCheckingAvailability(true);
+		const availableNow = await checkHallAvailability(hall.id, formData.eventDate, formData.startTime, formData.endTime);
+		setCheckingAvailability(false);
+		if (!availableNow) {
+			toast({ title: "Hall not available", description: "This hall is already booked for the selected slot. Please choose a different time.", variant: "destructive" });
+			setIsAvailable(false);
+			setAvailabilityMsg("Hall is not available for the requested time slot");
+			return;
+		}
+
+		setLoading(true);
+		try {
+			// Create sanitized booking payload (explicitly exclude any unwanted fields)
+			const bookingPayload = {
+				faculty_id: profile.id,
+				hall_id: hall.id,
+				faculty_name: (formData.facultyName || profile.name).trim(),
+				faculty_phone: (formData.facultyPhone || (profile as any)?.mobile_number).toString().replace(/\D/g, ''),
+				organizer_name: formData.organizerName.trim(),
+				institution_type: formData.institutionType as any,
+				guest_lectures_count: formData.guestLecturesCount,
+				guest_lecture_names: formData.guestLectureNames,
+				event_name: formData.eventName.trim(),
+				description: formData.description.trim(),
+				department: profile.department!,
+				hod_name: 'Auto-filled HOD',
+				event_date: formData.eventDate,
+				start_time: formData.startTime,
+				end_time: formData.endTime,
+				attendees_count: formData.attendeesCount,
+				required_ac: formData.requiredAC,
+				required_mic: formData.requiredMic,
+				required_projector: formData.requiredProjector,
+				required_audio_system: formData.requiredAudioSystem
+			};
+
+			console.log('Submitting booking payload:', bookingPayload);
+			
+			const { error } = await supabase.from('bookings').insert(bookingPayload);
+
+			if (error) throw error;
+			
+			console.log('Booking submitted successfully');
+			toast({
+				title: "Success",
+				description: "Booking request submitted successfully! It will be reviewed by your HOD.",
+				variant: "default"
+			});
+			onSuccess();
+		} catch (error: any) {
+			console.error('Booking submission error:', error);
+			toast({
+				title: "Error",
+				description: error.message,
+				variant: "destructive"
+			});
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const todayYMD = toTodayYMD();
+
+	return (
+		<Dialog open={true} onOpenChange={onClose}>
+			<DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+				<DialogHeader>
+					<DialogTitle>Book {hall.name}</DialogTitle>
+					<DialogDescription>
+						Provide event details and equipment needs. HOD, Principal and PRO will see this request.
+					</DialogDescription>
+					<Button variant="ghost" size="sm" onClick={onClose} className="absolute right-4 top-4">
+						<X className="h-4 w-4" />
+					</Button>
+				</DialogHeader>
+				
+				<form onSubmit={handleSubmit} className="space-y-4">
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+						<div>
+							<Label>Organizer Name</Label>
+							<Input
+								value={formData.organizerName}
+								onChange={(e) => setFormData({ ...formData, organizerName: alphaOnly(e.target.value) })}
+								inputMode="text"
+								pattern="[A-Za-z\s]+"
+								required
+							/>
+						</div>
+						<div>
+							<Label>Institution Type</Label>
+							<Select value={formData.institutionType} onValueChange={(value) => setFormData({ ...formData, institutionType: value })}>
+								<SelectTrigger>
+									<SelectValue placeholder="Select institution" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectItem value="School">School</SelectItem>
+									<SelectItem value="Diploma">Diploma</SelectItem>
+									<SelectItem value="Polytechnic">Polytechnic</SelectItem>
+									<SelectItem value="Engineering">Engineering</SelectItem>
+								</SelectContent>
+							</Select>
+						</div>
+
+						<div>
+							<Label>Event Name</Label>
+							<Input
+								value={formData.eventName}
+								onChange={(e) => setFormData({ ...formData, eventName: alphaOnly(e.target.value) })}
+								inputMode="text"
+								pattern="[A-Za-z\s]+"
+								required
+							/>
+						</div>
+						<div>
+							<Label>No. of Attendees</Label>
+							<Input
+								type="number"
+								min={1}
+								value={formData.attendeesCount}
+								onChange={(e) => setFormData({ ...formData, attendeesCount: Math.max(1, parseInt(e.target.value) || 0) })}
+								required
+							/>
+						</div>
+
+						<div className="md:col-span-2">
+							<Label>Description</Label>
+							<Textarea
+								value={formData.description}
+								onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+								placeholder="Brief description about the event"
+								rows={3}
+								required
+							/>
+						</div>
+
+						<div>
+							<Label>Faculty Name</Label>
+							<Input
+								value={formData.facultyName || profile?.name || ''}
+								onChange={(e) => setFormData({ ...formData, facultyName: e.target.value })}
+								required
+							/>
+						</div>
+						<div>
+							<Label>Faculty Phone Number</Label>
+							<Input
+								type="tel"
+								inputMode="numeric"
+								pattern="[0-9]{7,15}"
+								value={digitsOnly(formData.facultyPhone || (profile?.mobile_number ?? ''))}
+								onChange={(e) => setFormData({ ...formData, facultyPhone: digitsOnly(e.target.value) })}
+								required
+							/>
+						</div>
+
+						<div>
+							<Label>Event Date</Label>
+							<Input
+								type="date"
+								min={todayYMD}
+								value={formData.eventDate}
+								onChange={(e) => setFormData({ ...formData, eventDate: e.target.value })}
+								required
+							/>
+						</div>
+						<div className="grid grid-cols-2 gap-2">
+							<div>
+								<Label>Start Time</Label>
+								<Input
+									type="time"
+									min="08:00"
+									max="18:00"
+									value={formData.startTime}
+									onChange={(e) => {
+										const v = e.target.value;
+										setFormData({ ...formData, startTime: v });
+									}}
+									required
+								/>
+							</div>
+							<div>
+								<Label>End Time</Label>
+								<Input
+									type="time"
+									min="08:00"
+									max="18:00"
+									value={formData.endTime}
+									onChange={(e) => {
+										const v = e.target.value;
+										setFormData({ ...formData, endTime: v });
+									}}
+									required
+								/>
+							</div>
+						</div>
+
+						{isAvailable === false && (
+							<div className="md:col-span-2">
+								<Alert variant="destructive">
+									<AlertTitle>Hall not available</AlertTitle>
+									<AlertDescription>
+										{availabilityMsg || 'The selected date and time conflict with an existing booking. Please try a different slot.'}
+									</AlertDescription>
+								</Alert>
+							</div>
+						)}
+
+						<div>
+							<Label>No. of Guest Lecturers</Label>
+							<Input
+								type="number"
+								min={0}
+								value={formData.guestLecturesCount}
+								onChange={(e) => setFormData({ ...formData, guestLecturesCount: Math.max(0, parseInt(e.target.value) || 0) })}
+							/>
+						</div>
+						<div>
+							<Label>Guest Lecturer Names</Label>
+							<Input
+								value={formData.guestLectureNames}
+								onChange={(e) => setFormData({ ...formData, guestLectureNames: alphaCommaOnly(e.target.value) })}
+								placeholder="Comma separated names (optional)"
+							/>
+						</div>
+					</div>
+
+					<div>
+						<Label>Required Systems</Label>
+						<div className="grid grid-cols-2 gap-4 mt-2">
+							<div className="flex items-center space-x-2">
+								<Checkbox
+									checked={formData.requiredAC}
+									onCheckedChange={(checked) => setFormData({...formData, requiredAC: !!checked})}
+								/>
+								<Label>AC</Label>
+							</div>
+							<div className="flex items-center space-x-2">
+								<Checkbox
+									checked={formData.requiredMic}
+									onCheckedChange={(checked) => setFormData({...formData, requiredMic: !!checked})}
+								/>
+								<Label>Microphone</Label>
+							</div>
+							<div className="flex items-center space-x-2">
+								<Checkbox
+									checked={formData.requiredProjector}
+									onCheckedChange={(checked) => setFormData({...formData, requiredProjector: !!checked})}
+								/>
+								<Label>Projector</Label>
+							</div>
+							<div className="flex items-center space-x-2">
+								<Checkbox
+									checked={formData.requiredAudioSystem}
+									onCheckedChange={(checked) => setFormData({...formData, requiredAudioSystem: !!checked})}
+								/>
+								<Label>Audio System</Label>
+							</div>
+						</div>
+					</div>
+
+					<Button type="submit" className="w-full" disabled={loading || checkingAvailability || isAvailable === false}>
+						{loading ? "Submitting..." : (checkingAvailability ? "Checking availability..." : "Submit Booking Request")}
+					</Button>
+				</form>
+			</DialogContent>
+		</Dialog>
+	);
 };
 
 export default BookingForm;

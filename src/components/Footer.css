@@ -1,0 +1,237 @@
+/* Custom styles for Footer component */
+
+/* Floating Team Cards Animations */
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Team Cards Container */
+.team-cards-container {
+  animation: fadeInScale 0.4s ease-out;
+}
+
+/* Team Card Animations */
+.team-card {
+  opacity: 0;
+  transform: translateY(30px);
+  animation: slideInUp 0.5s ease-out forwards;
+}
+
+/* Floating avatar effect */
+.team-card .relative img {
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+/* Backdrop Animation */
+.fixed.inset-0 {
+  animation: backdropFadeIn 0.3s ease-out;
+}
+
+/* Enhanced Hover Effects */
+.team-card:hover {
+  transform: translateY(-8px) scale(1.02);
+}
+
+/* Social Button Enhanced Hover */
+.team-card button:hover {
+  transform: scale(1.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Innovators Hub Link Enhanced Hover */
+.innovators-hub-link:hover {
+  transform: scale(1.05);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Tooltip Enhanced Styling */
+.innovators-hub-link .group:hover span {
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Close Button Hover Effect */
+.team-cards-container button[aria-label="Close"]:hover {
+  transform: scale(1.1) rotate(90deg);
+  background-color: #f3f4f6;
+}
+
+/* Scrollbar Styling for Team Cards */
+.team-cards-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.team-cards-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.team-cards-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.team-cards-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Team Card Layout - Side by Side */
+.team-card {
+  min-width: 180px;
+  max-width: 200px;
+  flex: 0 0 auto;
+  width: 180px;
+}
+
+/* Responsive Design Enhancements */
+@media (max-width: 1024px) {
+  .team-card {
+    width: 160px;
+    min-width: 160px;
+    max-width: 160px;
+    padding: 0.75rem;
+  }
+  
+  .team-card img {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .team-card h3 {
+    font-size: 1rem;
+  }
+  
+  .team-card p {
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .team-cards-container {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+  }
+  
+  .team-card {
+    width: 140px;
+    min-width: 140px;
+    max-width: 140px;
+    padding: 0.5rem;
+  }
+  
+  .team-card img {
+    width: 45px;
+    height: 45px;
+  }
+  
+  .team-card h3 {
+    font-size: 0.875rem;
+  }
+  
+  .team-card p {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .team-cards-container {
+    margin: 0.5rem;
+    max-height: calc(100vh - 1rem);
+  }
+  
+  .team-card {
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+    padding: 0.5rem;
+  }
+  
+  .team-card img {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .team-card h3 {
+    font-size: 0.75rem;
+  }
+  
+  .team-card p {
+    font-size: 0.65rem;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .team-card {
+    border: 2px solid #000;
+  }
+  
+  .team-card:hover {
+    border-color: #333;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .team-card,
+  .team-cards-container,
+  .fixed.inset-0 {
+    animation: none;
+  }
+  
+  .team-card:hover {
+    transform: none;
+  }
+  
+  .innovators-hub-link:hover {
+    transform: none;
+  }
+  
+  .team-card button:hover {
+    transform: none;
+  }
+}
+
+/* Dark mode support (if needed) */
+@media (prefers-color-scheme: dark) {
+  .team-card {
+    background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+    border-color: #374151;
+    color: #f9fafb;
+  }
+  
+  .team-card h3 {
+    color: #f9fafb;
+  }
+  
+  .team-card p {
+    color: #d1d5db;
+  }
+}

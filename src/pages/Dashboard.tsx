@@ -1,15 +1,20 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import FacultyDashboard from "@/components/dashboards/FacultyDashboard";
 import HODDashboard from "@/components/dashboards/HODDashboard";
 import PrincipalDashboard from "@/components/dashboards/PrincipalDashboard";
 import PRODashboard from "@/components/dashboards/PRODashboard";
-import { Loader2 } from "lucide-react";
+import { Loader2, GraduationCap, LogOut, Bell, Home, Calendar, MapPin, User, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { NotificationCenter } from "@/components/NotificationCenter";
 
 const Dashboard = () => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -19,8 +24,11 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-gray-600">Loading your dashboard...</p>
+        </div>
       </div>
     );
   }
@@ -28,6 +36,26 @@ const Dashboard = () => {
   if (!user || !profile) {
     return null;
   }
+
+  const getRoleDisplayName = (role: string) => {
+    switch (role) {
+      case 'faculty': return 'Faculty Member';
+      case 'hod': return 'Head of Department';
+      case 'principal': return 'Principal';
+      case 'pro': return 'Public Relations Officer';
+      default: return role;
+    }
+  };
+
+  const getRoleIcon = (role: string) => {
+    switch (role) {
+      case 'faculty': return <User className="h-5 w-5" />;
+      case 'hod': return <GraduationCap className="h-5 w-5" />;
+      case 'principal': return <GraduationCap className="h-5 w-5" />;
+      case 'pro': return <User className="h-5 w-5" />;
+      default: return <User className="h-5 w-5" />;
+    }
+  };
 
   const renderDashboard = () => {
     switch (profile.role) {
@@ -44,7 +72,113 @@ const Dashboard = () => {
     }
   };
 
-  return renderDashboard();
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Top Navigation Bar */}
+      <nav className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo and Brand */}
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
+                <div className="bg-gradient-to-r from-primary to-secondary p-2 rounded-xl">
+                  <GraduationCap className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">Seminar Hall Booking</h1>
+                  <p className="text-xs text-gray-500">Smart Campus System</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation Links */}
+            <div className="hidden md:flex items-center space-x-8">
+              <a href="#dashboard" className="text-gray-700 hover:text-primary transition-colors flex items-center space-x-2">
+                <Home className="h-4 w-4" />
+                <span>Dashboard</span>
+              </a>
+              <a href="#bookings" className="text-gray-700 hover:text-primary transition-colors flex items-center space-x-2">
+                <Calendar className="h-4 w-4" />
+                <span>Bookings</span>
+              </a>
+              <a href="#halls" className="text-gray-700 hover:text-primary transition-colors flex items-center space-x-2">
+                <MapPin className="h-4 w-4" />
+                <span>Halls</span>
+              </a>
+              <a href="#profile" className="text-gray-700 hover:text-primary transition-colors flex items-center space-x-2">
+                <User className="h-4 w-4" />
+                <span>Profile</span>
+              </a>
+            </div>
+
+            {/* Right Side - Notifications and User */}
+            <div className="flex items-center space-x-4">
+              <NotificationCenter />
+              
+              {/* User Info */}
+              <div className="flex items-center space-x-3">
+                <div className="text-right hidden sm:block">
+                  <p className="text-sm font-medium text-gray-900">{profile.name}</p>
+                  <p className="text-xs text-gray-500">{getRoleDisplayName(profile.role)}</p>
+                </div>
+                <div className="bg-gradient-to-r from-primary to-secondary p-2 rounded-full">
+                  {getRoleIcon(profile.role)}
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={signOut}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Welcome Section */}
+      <div className="bg-gradient-to-r from-primary to-secondary">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-white mb-2">
+              Welcome back, {profile.name}!
+            </h2>
+            <p className="text-white/90 text-lg">
+              {getRoleDisplayName(profile.role)}
+              {profile.department && ` • ${profile.department} Department`}
+            </p>
+            <div className="mt-4">
+              <Badge className="bg-white/20 text-white border-white/30">
+                {profile.role.toUpperCase()}
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {renderDashboard()}
+      </div>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 mt-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="text-center">
+            <p className="text-gray-500 text-sm">
+              © 2025 VenueVista | Smart Campus System
+            </p>
+            <p className="text-gray-400 text-xs mt-1">
+              Streamlined hall booking management for educational institutions
+            </p>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
 };
 
 export default Dashboard;

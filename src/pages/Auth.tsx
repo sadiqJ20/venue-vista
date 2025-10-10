@@ -128,15 +128,17 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-accent/10 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
-          <GraduationCap className="h-16 w-16 text-primary mx-auto mb-4" />
-          <h1 className="text-4xl font-bold text-foreground mb-2">Seminar Hall Booking</h1>
-          <p className="text-muted-foreground text-lg">College Management System</p>
+          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-primary to-secondary rounded-full mb-6 shadow-lg">
+            <GraduationCap className="h-10 w-10 text-white" />
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Seminar Hall Booking</h1>
+          <p className="text-gray-600 text-lg">College Management System</p>
         </div>
 
-        <Card className="shadow-2xl border-0 bg-card/95 backdrop-blur">
+        <Card className="shadow-card border border-border rounded-card bg-card/95 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="text-2xl text-center">Welcome</CardTitle>
             <CardDescription className="text-center">
@@ -145,9 +147,9 @@ const Auth = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200 rounded-lg">
+                <TabsTrigger value="signin" className="data-[state=active]:bg-primary data-[state=active]:text-white">Sign In</TabsTrigger>
+                <TabsTrigger value="signup" className="data-[state=active]:bg-primary data-[state=active]:text-white">Sign Up</TabsTrigger>
               </TabsList>
               
               <TabsContent value="signin" className="space-y-4">
@@ -239,7 +241,11 @@ const Auth = () => {
                     )}
                   </div>
                   
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-primary hover:bg-primary-hover text-white shadow-button hover:shadow-button-hover rounded-button transition-all duration-200" 
+                    disabled={loading}
+                  >
                     {loading ? "Signing In..." : "Sign In"}
                   </Button>
                 </form>
@@ -354,7 +360,11 @@ const Auth = () => {
                     )}
                   </div>
                   
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-primary hover:bg-primary-hover text-white shadow-button hover:shadow-button-hover rounded-button transition-all duration-200" 
+                    disabled={loading}
+                  >
                     {loading ? "Creating Account..." : "Create Account"}
                   </Button>
                 </form>

@@ -101,6 +101,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string, userData: SignUpData) => {
+    // Check for HOD uniqueness before proceeding with registration
+    if (userData.role === 'hod' && userData.department) {
+      const { data: existingHod, error: hodCheckError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('role', 'hod')
+        .eq('department', userData.department)
+        .maybeSingle();
+
+      if (hodCheckError) return { error: hodCheckError };
+
+      if (existingHod) {
+        return { error: { message: 'HOD for this department already exists.' } };
+      }
+    }
+
     // Create auth user with metadata
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
