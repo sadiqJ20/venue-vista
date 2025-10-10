@@ -19,6 +19,7 @@ interface HallAvailability extends Hall {
   currentBooking?: {
     event_name: string;
     faculty_name: string;
+    start_time: string;
     end_time: string;
     event_date: string;
   };
@@ -43,42 +44,85 @@ export const useHallAvailability = () => {
       const today = new Date().toISOString().split('T')[0];
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
-        .select('hall_id, event_name, faculty_name, event_date, start_time, end_time')
+        .select('hall_id, event_name, faculty_name, event_date, start_time, end_time, status')
         .gte('event_date', today)
         .in('status', ['approved', 'pending_hod', 'pending_principal', 'pending_pro']);
 
       if (bookingsError) throw bookingsError;
 
+      // Debug: Log all bookings to understand what we're working with
+      console.log('All bookings fetched (cross-faculty):', bookingsData);
+      console.log('Total bookings found:', bookingsData?.length || 0);
+      console.log('Bookings by faculty:', bookingsData?.reduce((acc, booking) => {
+        acc[booking.faculty_name] = (acc[booking.faculty_name] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>) || {});
+
       // Create availability map
       const now = new Date();
+      const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
+      
       const hallsWithAvailability: HallAvailability[] = (hallsData || []).map(hall => {
-        // Find active booking for this hall
-        const activeBooking = (bookingsData || []).find(booking => {
-          if (booking.hall_id !== hall.id) return false;
+        // Find all bookings for this specific hall
+        const hallBookings = (bookingsData || []).filter(booking => {
+          return booking.hall_id === hall.id;
+        });
+
+        // Check if there's a booking happening RIGHT NOW for this hall
+        const currentBooking = hallBookings.find(booking => {
+          // Must be for today
+          if (booking.event_date !== today) return false;
           
-          const bookingDate = new Date(booking.event_date);
-          const now = new Date();
+          // Check if current time is within the booking time range
+          const bookingStartTime = booking.start_time;
+          const bookingEndTime = booking.end_time;
           
-          // Check if booking is for today or future dates
-          const isTodayOrFuture = bookingDate >= new Date(now.getFullYear(), now.getMonth(), now.getDate());
-          if (!isTodayOrFuture) return false;
-          
-          // For today's bookings, check if end time hasn't passed
-          const isToday = bookingDate.toDateString() === now.toDateString();
-          if (isToday) {
-            const bookingEndTime = new Date(`${booking.event_date}T${booking.end_time}`);
-            return bookingEndTime > now;
-          }
-          
-          // For future dates, booking is active
-          return true;
+          return currentTime >= bookingStartTime && currentTime <= bookingEndTime;
+        });
+
+        // Find the next upcoming booking for today (if no current booking)
+        const nextBookingToday = !currentBooking ? hallBookings
+          .filter(booking => {
+            // Must be for today
+            if (booking.event_date !== today) return false;
+            
+            // Must be in the future
+            return booking.start_time > currentTime;
+          })
+          .sort((a, b) => a.start_time.localeCompare(b.start_time))[0] : null;
+
+        // Hall is available if there's no current booking happening right now
+        const isCurrentlyAvailable = !currentBooking;
+
+        // Debug logging for all halls to understand what's happening
+        console.log(`Hall ${hall.name} (${hall.id.substring(0, 8)}):`, {
+          totalBookings: hallBookings.length,
+          todayBookings: hallBookings.filter(b => b.event_date === today).length,
+          currentBooking: currentBooking ? {
+            event: currentBooking.event_name,
+            faculty: currentBooking.faculty_name,
+            time: `${currentBooking.start_time}-${currentBooking.end_time}`,
+            status: currentBooking.status
+          } : null,
+          nextBookingToday: nextBookingToday ? {
+            event: nextBookingToday.event_name,
+            faculty: nextBookingToday.faculty_name,
+            time: `${nextBookingToday.start_time}-${nextBookingToday.end_time}`
+          } : null,
+          isCurrentlyAvailable,
+          currentTime,
+          allBookingsToday: hallBookings.filter(b => b.event_date === today).map(b => ({
+            faculty: b.faculty_name,
+            time: `${b.start_time}-${b.end_time}`,
+            status: b.status
+          }))
         });
 
         return {
           ...hall,
-          isAvailable: !activeBooking,
-          bookedUntil: activeBooking ? activeBooking.end_time : undefined,
-          currentBooking: activeBooking || undefined
+          isAvailable: isCurrentlyAvailable,
+          bookedUntil: currentBooking ? currentBooking.end_time : (nextBookingToday ? nextBookingToday.end_time : undefined),
+          currentBooking: currentBooking || undefined
         };
       });
 
@@ -107,10 +151,30 @@ export const useHallAvailability = () => {
       });
 
       if (error) throw error;
-      return data;
+      return data as boolean;
     } catch (error) {
       console.error('Error checking hall availability:', error);
       return false;
+    }
+  };
+
+  const getHallAvailabilityStatus = async (
+    hallId: string,
+    eventDate: string,
+    startTime: string,
+    endTime: string,
+    excludeBookingId?: string
+  ): Promise<{ available: boolean; reason: string; conflictingBooking?: unknown }> => {
+    try {
+      // For now, use the simple availability check and return a basic status
+      const isAvailable = await checkHallAvailability(hallId, eventDate, startTime, endTime, excludeBookingId);
+      return {
+        available: isAvailable,
+        reason: isAvailable ? 'Hall is available for the requested time slot' : 'Hall is not available for the requested time slot'
+      };
+    } catch (error) {
+      console.error('Error getting hall availability status:', error);
+      return { available: false, reason: 'Error checking availability' };
     }
   };
 
@@ -127,6 +191,7 @@ export const useHallAvailability = () => {
     halls,
     loading,
     refreshAvailability: fetchHallsWithAvailability,
-    checkHallAvailability
+    checkHallAvailability,
+    getHallAvailabilityStatus
   };
 };

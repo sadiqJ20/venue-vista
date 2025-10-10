@@ -143,32 +143,14 @@ const FacultyDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-card border-b border-border px-6 py-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Faculty Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {profile?.name} • {profile?.department} Department</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <NotificationCenter />
-            <Button variant="outline" onClick={signOut} size="sm">
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-6 py-8">
+    <div className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
+          <Card className="shadow-card border border-border rounded-card bg-card hover:shadow-card-hover transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Bookings</p>
-                  <p className="text-2xl font-bold">{bookings.length}</p>
+                  <p className="text-sm font-medium text-gray-600">Total Bookings</p>
+                  <p className="text-2xl font-bold text-gray-900">{bookings.length}</p>
                 </div>
                 <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
                   <Calendar className="h-4 w-4 text-primary" />
@@ -176,28 +158,28 @@ const FacultyDashboard = () => {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="shadow-card border border-border rounded-card bg-card hover:shadow-card-hover transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Pending</p>
-                  <p className="text-2xl font-bold">{bookings.filter(b => ['pending_hod', 'pending_principal', 'pending_pro'].includes(b.status)).length}</p>
+                  <p className="text-sm font-medium text-gray-600">Pending</p>
+                  <p className="text-2xl font-bold text-gray-900">{bookings.filter(b => ['pending_hod', 'pending_principal', 'pending_pro'].includes(b.status)).length}</p>
                 </div>
-                <div className="h-8 w-8 bg-yellow-500/10 rounded-full flex items-center justify-center">
-                  <Clock className="h-4 w-4 text-yellow-500" />
+                <div className="h-8 w-8 bg-warning/10 rounded-full flex items-center justify-center">
+                  <Clock className="h-4 w-4 text-warning" />
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="shadow-card border border-border rounded-card bg-card hover:shadow-card-hover transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Approved</p>
-                  <p className="text-2xl font-bold">{bookings.filter(b => b.status === 'approved').length}</p>
+                  <p className="text-sm font-medium text-gray-600">Approved</p>
+                  <p className="text-2xl font-bold text-gray-900">{bookings.filter(b => b.status === 'approved').length}</p>
                 </div>
-                <div className="h-8 w-8 bg-green-500/10 rounded-full flex items-center justify-center">
-                  <Users className="h-4 w-4 text-green-500" />
+                <div className="h-8 w-8 bg-success/10 rounded-full flex items-center justify-center">
+                  <Users className="h-4 w-4 text-success" />
                 </div>
               </div>
             </CardContent>
@@ -205,13 +187,13 @@ const FacultyDashboard = () => {
         </div>
 
         <Tabs defaultValue="halls" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="halls">Available Halls</TabsTrigger>
-            <TabsTrigger value="bookings">My Bookings</TabsTrigger>
-            <TabsTrigger value="notifications" className="relative">
+          <TabsList className="grid w-full grid-cols-3 bg-gray-100 border border-gray-200 rounded-lg">
+            <TabsTrigger value="halls" className="data-[state=active]:bg-primary data-[state=active]:text-white">Available Halls</TabsTrigger>
+            <TabsTrigger value="bookings" className="data-[state=active]:bg-primary data-[state=active]:text-white">My Bookings</TabsTrigger>
+            <TabsTrigger value="notifications" className="relative data-[state=active]:bg-primary data-[state=active]:text-white">
               Notifications
               {unreadCount > 0 && (
-                <Badge className="ml-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
+                <Badge className="ml-2 h-5 w-5 flex items-center justify-center p-0 text-xs bg-accent text-white">
                   {unreadCount}
                 </Badge>
               )}
@@ -239,49 +221,49 @@ const FacultyDashboard = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredHalls.map((hall) => (
-                  <Card key={hall.id} className={`hover:shadow-lg transition-shadow ${!hall.isAvailable ? 'opacity-60' : ''}`}>
+                  <Card key={hall.id} className={`shadow-card border border-border rounded-card bg-card hover:shadow-card-hover transition-all duration-200 ${!hall.isAvailable ? 'opacity-60' : ''}`}>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
+                      <CardTitle className="flex items-center gap-2 text-gray-900">
                         <MapPin className="h-5 w-5 text-primary" />
                         {hall.name}
                         {!hall.isAvailable && (
-                          <Badge variant="destructive" className="ml-auto">
+                          <Badge className="ml-auto bg-red-500 text-white">
                             Booked
                           </Badge>
                         )}
                       </CardTitle>
-                      <CardDescription>
+                      <CardDescription className="text-gray-600">
                         {hall.block} • {hall.type}
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Users className="h-4 w-4" />
                         Capacity: {hall.capacity} people
                       </div>
                       
                       {!hall.isAvailable && hall.currentBooking && (
-                        <div className="p-2 bg-destructive/10 rounded border border-destructive/20">
-                          <div className="flex items-center gap-2 text-sm text-destructive">
+                        <div className="p-2 bg-red-50 rounded border border-red-200">
+                          <div className="flex items-center gap-2 text-sm text-red-600">
                             <AlertCircle className="h-4 w-4" />
                             <span>Booked until {hall.bookedUntil}</span>
                           </div>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-xs text-gray-600 mt-1">
                             {hall.currentBooking.event_name} by {hall.currentBooking.faculty_name}
                           </p>
                         </div>
                       )}
                       
                       <div className="flex flex-wrap gap-2">
-                        {hall.has_ac && <Badge variant="secondary">AC</Badge>}
-                        {hall.has_mic && <Badge variant="secondary">Mic</Badge>}
-                        {hall.has_projector && <Badge variant="secondary">Projector</Badge>}
-                        {hall.has_audio_system && <Badge variant="secondary">Audio System</Badge>}
+                        {hall.has_ac && <Badge className="bg-secondary/10 text-secondary border-secondary/20">AC</Badge>}
+                        {hall.has_mic && <Badge className="bg-secondary/10 text-secondary border-secondary/20">Mic</Badge>}
+                        {hall.has_projector && <Badge className="bg-secondary/10 text-secondary border-secondary/20">Projector</Badge>}
+                        {hall.has_audio_system && <Badge className="bg-secondary/10 text-secondary border-secondary/20">Audio System</Badge>}
                       </div>
                       
                       <Button 
                         onClick={() => handleBookHall(hall)} 
-                        className="w-full"
+                        className="w-full bg-primary hover:bg-primary-hover text-white shadow-button hover:shadow-button-hover rounded-button transition-all duration-200"
                         disabled={!hall.isAvailable}
                       >
                         <Plus className="h-4 w-4 mr-2" />
@@ -369,7 +351,6 @@ const FacultyDashboard = () => {
             )}
           </TabsContent>
         </Tabs>
-      </div>
 
       {/* Booking Form Modal */}
       {showBookingForm && selectedHall && (

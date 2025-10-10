@@ -70,24 +70,7 @@ const HODDashboard = () => {
   const rejectedBookings = bookings.filter(b => b.status === 'rejected');
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-card border-b border-border px-6 py-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">HOD Dashboard</h1>
-            <p className="text-muted-foreground">Welcome back, {profile?.name} • {profile?.department} Department</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <NotificationCenter />
-            <Button variant="outline" onClick={signOut} size="sm">
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
-          </div>
-        </div>
-      </header>
-      
-      <div className="container mx-auto px-6 py-8">
+    <div className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
@@ -302,7 +285,6 @@ const HODDashboard = () => {
           </CardContent>
         </Card>
         </div>
-      </div>
 
       {/* Hall Switch Dialog */}
       {showSwitchDialog && selectedBooking && (
