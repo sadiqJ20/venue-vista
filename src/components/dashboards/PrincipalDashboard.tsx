@@ -9,6 +9,7 @@ import { LogOut, GraduationCap, Bell, BellRing } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import BookingCard from "@/components/BookingCard";
 import { NotificationCenter } from "@/components/NotificationCenter";
+import BookedHallsOverview from "@/components/BookedHallsOverview";
 
 const PrincipalDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -116,7 +117,7 @@ const PrincipalDashboard = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="pending" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="pending" className="relative">
                   Pending Review
                   {pendingBookings.length > 0 && (
@@ -127,6 +128,7 @@ const PrincipalDashboard = () => {
                 </TabsTrigger>
                 <TabsTrigger value="approved">Approved</TabsTrigger>
                 <TabsTrigger value="rejected">Rejected</TabsTrigger>
+                <TabsTrigger value="booked">Booked Halls</TabsTrigger>
                 <TabsTrigger value="all">All Requests</TabsTrigger>
               </TabsList>
               
@@ -174,6 +176,11 @@ const PrincipalDashboard = () => {
                 )}
               </TabsContent>
 
+              <TabsContent value="booked" className="mt-6">
+                {/* Render booked halls overview inside the same card body */}
+                <BookedHallsOverview />
+              </TabsContent>
+
               <TabsContent value="all" className="mt-6">
                 {allBookings.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">No requests found</p>
@@ -188,6 +195,7 @@ const PrincipalDashboard = () => {
             </Tabs>
           </CardContent>
         </Card>
+        
     </div>
   );
 };

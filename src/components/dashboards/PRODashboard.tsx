@@ -9,6 +9,7 @@ import { LogOut, Briefcase, Bell, BellRing } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import BookingCard from "@/components/BookingCard";
 import { NotificationCenter } from "@/components/NotificationCenter";
+import BookedHallsOverview from "@/components/BookedHallsOverview";
 
 const PRODashboard = () => {
   const { profile, signOut } = useAuth();
@@ -103,7 +104,7 @@ const PRODashboard = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="pending" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="pending" className="relative">
                   Pending Final Approval
                   {pendingBookings.length > 0 && (
@@ -114,6 +115,7 @@ const PRODashboard = () => {
                 </TabsTrigger>
                 <TabsTrigger value="approved">Confirmed Bookings</TabsTrigger>
                 <TabsTrigger value="rejected">Rejected Bookings</TabsTrigger>
+                <TabsTrigger value="booked">Booked Halls</TabsTrigger>
               </TabsList>
               
               <TabsContent value="pending" className="mt-6">
@@ -159,9 +161,14 @@ const PRODashboard = () => {
                   </div>
                 )}
               </TabsContent>
+              <TabsContent value="booked" className="mt-6">
+                {/* Render booked halls overview inside the same card body for PRO */}
+                <BookedHallsOverview />
+              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
+        
     </div>
   );
 };
