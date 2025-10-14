@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useHallAvailability } from "@/hooks/useHallAvailability";
+import { useEmailNotifications } from "@/hooks/useEmailNotifications";
+import { sendBookingNotification } from "@/lib/emailNotifications";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface Hall {
@@ -41,10 +43,32 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
 	const { profile } = useAuth();
 	const { toast } = useToast();
 	const { checkHallAvailability, getHallAvailabilityStatus } = useHallAvailability();
+	const { notifyHODNewBooking, emailStatus, setEmailStatus } = useEmailNotifications();
 	const [loading, setLoading] = useState(false);
 	const [checkingAvailability, setCheckingAvailability] = useState(false);
 	const [isAvailable, setIsAvailable] = useState<boolean | undefined>(undefined);
 	const [availabilityMsg, setAvailabilityMsg] = useState<string>("");
+	
+	// Show email status feedback
+	useEffect(() => {
+		if (emailStatus) {
+			if (emailStatus.success) {
+				toast({
+					title: "📨 Email sent successfully",
+					description: emailStatus.message,
+					variant: "default"
+				});
+			} else {
+				toast({
+					title: "⚠️ Failed to send email",
+					description: emailStatus.message,
+					variant: "destructive"
+				});
+			}
+			setEmailStatus(null);
+		}
+	}, [emailStatus, setEmailStatus, toast]);
+	
 	const [formData, setFormData] = useState({
 		organizerName: '',
 		facultyName: '',
@@ -196,11 +220,47 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
 			if (error) throw error;
 			
 			console.log('Booking submitted successfully');
-			toast({
-				title: "Success",
-				description: "Booking request submitted successfully! It will be reviewed by your HOD.",
-				variant: "default"
-			});
+			
+			// Send email notification using unified function
+			try {
+				// Create a booking object for the email function
+				const bookingForEmail = {
+					faculty_id: profile.id,
+					faculty_name: (formData.facultyName || profile.name).trim(),
+					faculty_phone: (formData.facultyPhone || (profile as any)?.mobile_number).toString().replace(/\D/g, ''),
+					department: profile.department!,
+					event_name: formData.eventName.trim(),
+					event_date: formData.eventDate,
+					start_time: formData.startTime,
+					end_time: formData.endTime,
+					attendees_count: formData.attendeesCount,
+					halls: { name: hall.name }
+				};
+
+				const emailSuccess = await sendBookingNotification(bookingForEmail, "Faculty", "Pending");
+
+				if (emailSuccess) {
+					toast({
+						title: "Success",
+						description: "Booking request submitted successfully! Email notification sent to HOD.",
+						variant: "default"
+					});
+				} else {
+					toast({
+						title: "Success",
+						description: "Booking request submitted successfully! Email notification failed, but HOD will see it in the system.",
+						variant: "default"
+					});
+				}
+			} catch (emailError) {
+				console.error('Email notification error:', emailError);
+				toast({
+					title: "Success",
+					description: "Booking request submitted successfully! Email notification failed, but HOD will see it in the system.",
+					variant: "default"
+				});
+			}
+			
 			onSuccess();
 		} catch (error: any) {
 			console.error('Booking submission error:', error);

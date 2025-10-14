@@ -53,19 +53,43 @@ npm install
 cp .env.example .env.local
 ```
 
-Add your Supabase configuration:
+Add your Supabase and EmailJS configuration:
 ```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# EmailJS Configuration
+VITE_EMAILJS_SERVICE_ID=your_emailjs_service_id
+VITE_EMAILJS_TEMPLATE_ID=your_emailjs_template_id
+VITE_EMAILJS_PUBLIC_KEY=your_emailjs_public_key
 ```
 
-4. Set up the database:
+4. Set up EmailJS (for email notifications):
+```bash
+# Create EmailJS account at https://www.emailjs.com
+# Follow the setup guide in EMAILJS_TEMPLATE_SETUP.md
+# Configure your email service and template
+# Add environment variables as shown above
+```
+
+5. Set up the database:
 ```bash
 # Run Supabase migrations
 supabase db reset
 ```
 
-5. Start the development server:
+6. Deploy Supabase Edge Function:
+```bash
+# Set EmailJS secrets in Supabase
+supabase secrets set EMAILJS_SERVICE_ID=your_service_id
+supabase secrets set EMAILJS_TEMPLATE_ID=your_template_id
+supabase secrets set EMAILJS_PUBLIC_KEY=your_public_key
+
+# Deploy the EmailJS edge function
+supabase functions deploy send-emailjs-notification
+```
+
+7. Start the development server:
 ```bash
 npm run dev
 ```
