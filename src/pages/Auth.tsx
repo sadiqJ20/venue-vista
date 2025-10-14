@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { GraduationCap, Users, UserCheck, Briefcase } from "lucide-react";
+import PMCHeader from "@/components/PMCHeader";
+import Footer from "@/components/Footer";
 
 type Department = 'CSE' | 'IT' | 'ECE' | 'EEE' | 'MECH' | 'CIVIL' | 'AERO' | 'CHEMICAL' | 'AIDS' | 'CSBS';
 type UserRole = 'faculty' | 'hod' | 'principal' | 'pro';
@@ -128,251 +130,267 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-primary to-secondary rounded-full mb-6 shadow-lg">
-            <GraduationCap className="h-10 w-10 text-white" />
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Seminar Hall Booking</h1>
-          <p className="text-gray-600 text-lg">College Management System</p>
-        </div>
-
-        <Card className="shadow-card border border-border rounded-card bg-card/95 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="text-2xl text-center">Welcome</CardTitle>
-            <CardDescription className="text-center">
-              Sign in to your account or create a new one
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="signin" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200 rounded-lg">
-                <TabsTrigger value="signin" className="data-[state=active]:bg-primary data-[state=active]:text-white">Sign In</TabsTrigger>
-                <TabsTrigger value="signup" className="data-[state=active]:bg-primary data-[state=active]:text-white">Sign Up</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="signin" className="space-y-4">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <Label htmlFor="signin-email">Email</Label>
-                      <Input
-                        id="signin-email"
-                        type="email"
-                        placeholder="Enter your email"
-                        value={signInData.email}
-                        onChange={(e) => setSignInData({...signInData, email: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="signin-password">Password</Label>
-                      <Input
-                        id="signin-password"
-                        type="password"
-                        placeholder="Enter your password"
-                        value={signInData.password}
-                        onChange={(e) => setSignInData({...signInData, password: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="signin-role">Role</Label>
-                      <Select onValueChange={(value) => setSignInData({...signInData, role: value as UserRole})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select your role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="faculty">
-                            <div className="flex items-center gap-2">
-                              {getRoleIcon('faculty')}
-                              Faculty
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="hod">
-                            <div className="flex items-center gap-2">
-                              {getRoleIcon('hod')}
-                              HOD
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="principal">
-                            <div className="flex items-center gap-2">
-                              {getRoleIcon('principal')}
-                              Principal
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="pro">
-                            <div className="flex items-center gap-2">
-                              {getRoleIcon('pro')}
-                              PRO
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {(signInData.role === 'faculty' || signInData.role === 'hod') && (
-                      <>
-                        <div>
-                          <Label htmlFor="signin-department">Department</Label>
-                          <Select onValueChange={(value) => setSignInData({...signInData, department: value as Department})}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select department" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {departments.map(dept => (
-                                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="signin-uniqueid">Unique ID</Label>
-                          <Input
-                            id="signin-uniqueid"
-                            placeholder="Enter your unique ID"
-                            value={signInData.uniqueId}
-                            onChange={(e) => setSignInData({...signInData, uniqueId: e.target.value})}
-                            required
-                          />
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-primary hover:bg-primary-hover text-white shadow-button hover:shadow-button-hover rounded-button transition-all duration-200" 
-                    disabled={loading}
-                  >
-                    {loading ? "Signing In..." : "Sign In"}
-                  </Button>
-                </form>
-              </TabsContent>
-
-              <TabsContent value="signup" className="space-y-4">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <Label htmlFor="signup-name">Full Name</Label>
-                      <Input
-                        id="signup-name"
-                        placeholder="Enter your full name"
-                        value={signUpData.name}
-                        onChange={(e) => setSignUpData({...signUpData, name: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="signup-email">Email</Label>
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="Enter your email"
-                        value={signUpData.email}
-                        onChange={(e) => setSignUpData({...signUpData, email: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="signup-password">Password</Label>
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="Create a password"
-                        value={signUpData.password}
-                        onChange={(e) => setSignUpData({...signUpData, password: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="signup-mobile">Mobile Number</Label>
-                      <Input
-                        id="signup-mobile"
-                        placeholder="Enter your mobile number"
-                        value={signUpData.mobile}
-                        onChange={(e) => setSignUpData({...signUpData, mobile: e.target.value})}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="signup-role">Role</Label>
-                      <Select onValueChange={(value) => setSignUpData({...signUpData, role: value as UserRole})}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select your role" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="faculty">
-                            <div className="flex items-center gap-2">
-                              {getRoleIcon('faculty')}
-                              Faculty
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="hod">
-                            <div className="flex items-center gap-2">
-                              {getRoleIcon('hod')}
-                              HOD
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="principal">
-                            <div className="flex items-center gap-2">
-                              {getRoleIcon('principal')}
-                              Principal
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="pro">
-                            <div className="flex items-center gap-2">
-                              {getRoleIcon('pro')}
-                              PRO
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    {(signUpData.role === 'faculty' || signUpData.role === 'hod') && (
-                      <>
-                        <div>
-                          <Label htmlFor="signup-department">Department</Label>
-                          <Select onValueChange={(value) => setSignUpData({...signUpData, department: value as Department})}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select department" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {departments.map(dept => (
-                                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div>
-                          <Label htmlFor="signup-uniqueid">Unique ID</Label>
-                          <Input
-                            id="signup-uniqueid"
-                            placeholder="Enter your unique ID"
-                            value={signUpData.uniqueId}
-                            onChange={(e) => setSignUpData({...signUpData, uniqueId: e.target.value})}
-                            required
-                          />
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-primary hover:bg-primary-hover text-white shadow-button hover:shadow-button-hover rounded-button transition-all duration-200" 
-                    disabled={loading}
-                  >
-                    {loading ? "Creating Account..." : "Create Account"}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+    <div className="min-h-screen flex flex-col relative">
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/images/pmc-bg.webp')", backgroundAttachment: 'fixed' }}
+      >
+        <div className="absolute inset-0 bg-white/40 backdrop-blur-sm"></div>
       </div>
+
+      <PMCHeader />
+
+      <div className="container mx-auto px-6 py-16 pt-48 relative z-20 flex-1">
+        <div className="absolute -top-4 left-0 right-0 h-4 bg-gradient-to-b from-gray-100/50 to-transparent pointer-events-none"></div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+          <div className="flex flex-col items-center justify-center text-center h-full">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-primary to-secondary rounded-full mb-6 shadow-lg">
+              <GraduationCap className="h-10 w-10 text-white" />
+            </div>
+            <h1 className="text-4xl font-bold text-gray-900 mb-2">Seminar Hall Booking</h1>
+            <p className="text-gray-900 text-lg">College Management System</p>
+          </div>
+
+          <div className="w-full max-w-2xl md:max-w-none md:ml-0 md:-translate-x-4 lg:-translate-x-6 transition-transform">
+            <Card className="shadow-card border border-border rounded-card bg-card/95 backdrop-blur-sm">
+              <CardHeader>
+                <CardTitle className="text-2xl text-center">Welcome</CardTitle>
+                <CardDescription className="text-center">
+                  Sign in to your account or create a new one
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Tabs defaultValue="signin" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200 rounded-lg">
+                    <TabsTrigger value="signin" className="data-[state=active]:bg-primary data-[state=active]:text-white">Sign In</TabsTrigger>
+                    <TabsTrigger value="signup" className="data-[state=active]:bg-primary data-[state=active]:text-white">Sign Up</TabsTrigger>
+                  </TabsList>
+                
+                  <TabsContent value="signin" className="space-y-4">
+                    <form onSubmit={handleSignIn} className="space-y-4">
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <Label htmlFor="signin-email">Email</Label>
+                          <Input
+                            id="signin-email"
+                            type="email"
+                            placeholder="Enter your email"
+                            value={signInData.email}
+                            onChange={(e) => setSignInData({...signInData, email: e.target.value})}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="signin-password">Password</Label>
+                          <Input
+                            id="signin-password"
+                            type="password"
+                            placeholder="Enter your password"
+                            value={signInData.password}
+                            onChange={(e) => setSignInData({...signInData, password: e.target.value})}
+                            required
+                          />
+                        </div>
+                        <div className="relative">
+                          <Label htmlFor="signin-role">Role</Label>
+                          <Select onValueChange={(value) => setSignInData({...signInData, role: value as UserRole})}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select your role" />
+                            </SelectTrigger>
+                            <SelectContent className="z-50">
+                              <SelectItem value="faculty">
+                                <div className="flex items-center gap-2">
+                                  {getRoleIcon('faculty')}
+                                  Faculty
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="hod">
+                                <div className="flex items-center gap-2">
+                                  {getRoleIcon('hod')}
+                                  HOD
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="principal">
+                                <div className="flex items-center gap-2">
+                                  {getRoleIcon('principal')}
+                                  Principal
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="pro">
+                                <div className="flex items-center gap-2">
+                                  {getRoleIcon('pro')}
+                                  PRO
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {(signInData.role === 'faculty' || signInData.role === 'hod') && (
+                          <>
+                            <div className="relative">
+                              <Label htmlFor="signin-department">Department</Label>
+                              <Select onValueChange={(value) => setSignInData({...signInData, department: value as Department})}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select department" />
+                                </SelectTrigger>
+                                <SelectContent className="z-50">
+                                  {departments.map(dept => (
+                                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label htmlFor="signin-uniqueid">Unique ID</Label>
+                              <Input
+                                id="signin-uniqueid"
+                                placeholder="Enter your unique ID"
+                                value={signInData.uniqueId}
+                                onChange={(e) => setSignInData({...signInData, uniqueId: e.target.value})}
+                                required
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      
+                      <Button 
+                        type="submit" 
+                        className="w-full bg-primary hover:bg-primary-hover text-white shadow-button hover:shadow-button-hover rounded-button transition-all duration-200" 
+                        disabled={loading}
+                      >
+                        {loading ? "Signing In..." : "Sign In"}
+                      </Button>
+                    </form>
+                  </TabsContent>
+
+                  <TabsContent value="signup" className="space-y-4">
+                    <form onSubmit={handleSignUp} className="space-y-4">
+                      <div className="grid grid-cols-1 gap-4">
+                        <div>
+                          <Label htmlFor="signup-name">Full Name</Label>
+                          <Input
+                            id="signup-name"
+                            placeholder="Enter your full name"
+                            value={signUpData.name}
+                            onChange={(e) => setSignUpData({...signUpData, name: e.target.value})}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="signup-email">Email</Label>
+                          <Input
+                            id="signup-email"
+                            type="email"
+                            placeholder="Enter your email"
+                            value={signUpData.email}
+                            onChange={(e) => setSignUpData({...signUpData, email: e.target.value})}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="signup-password">Password</Label>
+                          <Input
+                            id="signup-password"
+                            type="password"
+                            placeholder="Create a password"
+                            value={signUpData.password}
+                            onChange={(e) => setSignUpData({...signUpData, password: e.target.value})}
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="signup-mobile">Mobile Number</Label>
+                          <Input
+                            id="signup-mobile"
+                            placeholder="Enter your mobile number"
+                            value={signUpData.mobile}
+                            onChange={(e) => setSignUpData({...signUpData, mobile: e.target.value})}
+                            required
+                          />
+                        </div>
+                        <div className="relative">
+                          <Label htmlFor="signup-role">Role</Label>
+                          <Select onValueChange={(value) => setSignUpData({...signUpData, role: value as UserRole})}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select your role" />
+                            </SelectTrigger>
+                            <SelectContent className="z-50">
+                              <SelectItem value="faculty">
+                                <div className="flex items-center gap-2">
+                                  {getRoleIcon('faculty')}
+                                  Faculty
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="hod">
+                                <div className="flex items-center gap-2">
+                                  {getRoleIcon('hod')}
+                                  HOD
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="principal">
+                                <div className="flex items-center gap-2">
+                                  {getRoleIcon('principal')}
+                                  Principal
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="pro">
+                                <div className="flex items-center gap-2">
+                                  {getRoleIcon('pro')}
+                                  PRO
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {(signUpData.role === 'faculty' || signUpData.role === 'hod') && (
+                          <>
+                            <div className="relative">
+                              <Label htmlFor="signup-department">Department</Label>
+                              <Select onValueChange={(value) => setSignUpData({...signUpData, department: value as Department})}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select department" />
+                                </SelectTrigger>
+                                <SelectContent className="z-50">
+                                  {departments.map(dept => (
+                                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label htmlFor="signup-uniqueid">Unique ID</Label>
+                              <Input
+                                id="signup-uniqueid"
+                                placeholder="Enter your unique ID"
+                                value={signUpData.uniqueId}
+                                onChange={(e) => setSignUpData({...signUpData, uniqueId: e.target.value})}
+                                required
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      
+                      <Button 
+                        type="submit" 
+                        className="w-full bg-primary hover:bg-primary-hover text-white shadow-button hover:shadow-button-hover rounded-button transition-all duration-200" 
+                        disabled={loading}
+                      >
+                        {loading ? "Creating Account..." : "Create Account"}
+                      </Button>
+                    </form>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      <Footer />
     </div>
   );
 };

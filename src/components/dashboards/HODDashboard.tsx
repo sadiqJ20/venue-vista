@@ -124,8 +124,8 @@ const HODDashboard = () => {
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="pending" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="pending" className="relative">
+                <TabsList className="grid w-full grid-cols-3 gap-2">
+                  <TabsTrigger value="pending" className="relative border border-gray-300 rounded-md px-3 py-1.5 text-sm hover:bg-gray-50 data-[state=active]:bg-gray-100 data-[state=active]:border-gray-400">
                     Pending
                     {pendingBookings.length > 0 && (
                       <Badge className="ml-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
@@ -133,8 +133,8 @@ const HODDashboard = () => {
                       </Badge>
                     )}
                   </TabsTrigger>
-                  <TabsTrigger value="accepted">Accepted</TabsTrigger>
-                  <TabsTrigger value="rejected">Rejected</TabsTrigger>
+                  <TabsTrigger value="accepted" className="border border-gray-300 rounded-md px-3 py-1.5 text-sm hover:bg-gray-50 data-[state=active]:bg-gray-100 data-[state=active]:border-gray-400">Accepted</TabsTrigger>
+                  <TabsTrigger value="rejected" className="border border-gray-300 rounded-md px-3 py-1.5 text-sm hover:bg-gray-50 data-[state=active]:bg-gray-100 data-[state=active]:border-gray-400">Rejected</TabsTrigger>
                 </TabsList>
               
               <TabsContent value="pending" className="mt-6">

@@ -9,6 +9,7 @@ import { LogOut, Briefcase, Bell, BellRing } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import BookingCard from "@/components/BookingCard";
 import { NotificationCenter } from "@/components/NotificationCenter";
+import BookedHallsOverview from "@/components/BookedHallsOverview";
 
 const PRODashboard = () => {
   const { profile, signOut } = useAuth();
@@ -103,8 +104,8 @@ const PRODashboard = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="pending" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="pending" className="relative">
+              <TabsList className="grid w-full grid-cols-4 gap-2">
+                <TabsTrigger value="pending" className="relative border border-gray-300 rounded-md px-3 py-1.5 text-sm hover:bg-gray-50 data-[state=active]:bg-gray-100 data-[state=active]:border-gray-400">
                   Pending Final Approval
                   {pendingBookings.length > 0 && (
                     <Badge className="ml-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
@@ -112,8 +113,9 @@ const PRODashboard = () => {
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="approved">Confirmed Bookings</TabsTrigger>
-                <TabsTrigger value="rejected">Rejected Bookings</TabsTrigger>
+                <TabsTrigger value="approved" className="border border-gray-300 rounded-md px-3 py-1.5 text-sm hover:bg-gray-50 data-[state=active]:bg-gray-100 data-[state=active]:border-gray-400">Confirmed Bookings</TabsTrigger>
+                <TabsTrigger value="rejected" className="border border-gray-300 rounded-md px-3 py-1.5 text-sm hover:bg-gray-50 data-[state=active]:bg-gray-100 data-[state=active]:border-gray-400">Rejected Bookings</TabsTrigger>
+                <TabsTrigger value="booked" className="border border-gray-300 rounded-md px-3 py-1.5 text-sm hover:bg-gray-50 data-[state=active]:bg-gray-100 data-[state=active]:border-gray-400">Booked Halls</TabsTrigger>
               </TabsList>
               
               <TabsContent value="pending" className="mt-6">
@@ -159,9 +161,14 @@ const PRODashboard = () => {
                   </div>
                 )}
               </TabsContent>
+              <TabsContent value="booked" className="mt-6">
+                {/* Render booked halls overview inside the same card body for PRO */}
+                <BookedHallsOverview />
+              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
+        
     </div>
   );
 };

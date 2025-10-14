@@ -110,10 +110,10 @@ const Footer = () => {
                   Click to view the team!
                 </span>
               </button>
+              <span className="mx-2 text-gray-400">|</span>
+              <span className="font-semibold text-black">IT DEPT</span>
             </p>
-            <p className="text-gray-400 text-xs mt-1">
-              Streamlined hall booking management for educational institutions
-            </p>
+            {/* Removed subtitle line as requested */}
           </div>
         </div>
       </footer>
@@ -141,7 +141,7 @@ const Footer = () => {
                   onClick={() => setIsTeamVisible(false)}
                   variant="outline"
                   size="sm"
-                  className="hover:bg-gray-100 rounded-full p-2"
+                  className="hover:bg-gray-100 hover:text-red-600 focus-visible:ring-red-400 rounded-full p-2 transition-colors"
                 >
                   <X className="h-5 w-5" />
                 </Button>
@@ -154,7 +154,7 @@ const Footer = () => {
                 {teamMembers.map((member, index) => (
                   <div
                     key={member.id}
-                    className="team-card rounded-xl p-6 transition-all duration-300 transform hover:-translate-y-1 bg-transparent"
+                    className="team-card rounded-xl p-6 transition-all duration-300 transform hover:-translate-y-1 bg-white"
                     style={{
                       animationDelay: `${index * 100}ms`,
                       animation: 'slideInUp 0.5s ease-out forwards'
@@ -162,7 +162,7 @@ const Footer = () => {
                   >
                     <div className="flex flex-col items-center text-center">
                       {/* Member Photo (floating above card) */}
-                      <div className="relative mb-4 -mt-8">
+                      <div className="relative mb-4 -mt-8 bg-white p-1 rounded-full">
                         <img
                           src={member.photo}
                           alt={member.name}
@@ -186,28 +186,25 @@ const Footer = () => {
                       {/* Social Links */}
                       <div className="flex space-x-3">
                         <Button
-                          variant="outline"
                           size="sm"
-                          className="hover:bg-gray-100 transition-all duration-200 hover:scale-110"
+                          className="bg-black text-white hover:bg-black/90 hover:scale-110 transition-all duration-200"
                           onClick={() => window.open(member.social.github, '_blank')}
                         >
-                          <Github className="h-4 w-4" />
+                          <Github className="h-4 w-4 text-white" />
                         </Button>
                         <Button
-                          variant="outline"
                           size="sm"
-                          className="hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 hover:scale-110"
+                          className="bg-black text-white hover:bg-black/90 hover:scale-110 transition-all duration-200"
                           onClick={() => window.open(member.social.linkedin, '_blank')}
                         >
-                          <Linkedin className="h-4 w-4" />
+                          <Linkedin className="h-4 w-4 text-white" />
                         </Button>
                         <Button
-                          variant="outline"
                           size="sm"
-                          className="hover:bg-red-50 hover:border-red-300 transition-all duration-200 hover:scale-110"
+                          className="bg-black text-white hover:bg-black/90 hover:scale-110 transition-all duration-200"
                           onClick={() => window.open(`mailto:${member.social.email}`, '_blank')}
                         >
-                          <Mail className="h-4 w-4" />
+                          <Mail className="h-4 w-4 text-white" />
                         </Button>
                       </div>
                     </div>

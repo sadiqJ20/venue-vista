@@ -283,14 +283,14 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
         )}
 
         {showActions && canApprove() && (
-          <div className="flex gap-2 pt-4 border-t">
-            <Button onClick={handleApprove} disabled={loading} className="flex-1">
+          <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
+            <Button onClick={handleApprove} disabled={loading} variant="outline" className="w-full sm:w-auto border border-green-500 text-green-600 hover:bg-green-50 hover:border-green-600 hover:text-green-700 transition-colors">
               <CheckCircle className="h-4 w-4 mr-2" />
               Approve
             </Button>
             <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
               <DialogTrigger asChild>
-                <Button variant="destructive" className="flex-1">
+                <Button variant="outline" className="w-full sm:w-auto border border-red-500 text-red-600 hover:bg-red-50 hover:border-red-600 hover:text-red-700 transition-colors">
                   <XCircle className="h-4 w-4 mr-2" />
                   Reject
                 </Button>
@@ -314,7 +314,7 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
                       variant="destructive" 
                       onClick={handleReject}
                       disabled={loading || !rejectionReason.trim()}
-                      className="flex-1"
+                      className="flex-1 hover:bg-red-600 hover:text-white"
                     >
                       {loading ? "Rejecting..." : "Confirm Rejection"}
                     </Button>
