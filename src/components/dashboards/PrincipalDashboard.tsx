@@ -117,8 +117,8 @@ const PrincipalDashboard = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="pending" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
-                <TabsTrigger value="pending" className="relative">
+              <TabsList className="grid w-full grid-cols-5 gap-2 overflow-x-auto no-scrollbar">
+                <TabsTrigger value="pending" className="relative border border-gray-300 rounded-md px-3 py-1.5 text-sm whitespace-nowrap hover:bg-gray-50 data-[state=active]:bg-gray-100 data-[state=active]:border-gray-400">
                   Pending Review
                   {pendingBookings.length > 0 && (
                     <Badge className="ml-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
@@ -126,10 +126,10 @@ const PrincipalDashboard = () => {
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="approved">Approved</TabsTrigger>
-                <TabsTrigger value="rejected">Rejected</TabsTrigger>
-                <TabsTrigger value="booked">Booked Halls</TabsTrigger>
-                <TabsTrigger value="all">All Requests</TabsTrigger>
+                <TabsTrigger value="approved" className="border border-gray-300 rounded-md px-3 py-1.5 text-sm whitespace-nowrap hover:bg-gray-50 data-[state=active]:bg-gray-100 data-[state=active]:border-gray-400">Approved</TabsTrigger>
+                <TabsTrigger value="rejected" className="border border-gray-300 rounded-md px-3 py-1.5 text-sm whitespace-nowrap hover:bg-gray-50 data-[state=active]:bg-gray-100 data-[state=active]:border-gray-400">Rejected</TabsTrigger>
+                <TabsTrigger value="booked" className="border border-gray-300 rounded-md px-3 py-1.5 text-sm whitespace-nowrap hover:bg-gray-50 data-[state=active]:bg-gray-100 data-[state=active]:border-gray-400">Booked Halls</TabsTrigger>
+                <TabsTrigger value="all" className="border border-gray-300 rounded-md px-3 py-1.5 text-sm whitespace-nowrap hover:bg-gray-50 data-[state=active]:bg-gray-100 data-[state=active]:border-gray-400">All Requests</TabsTrigger>
               </TabsList>
               
               <TabsContent value="pending" className="mt-6">

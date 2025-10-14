@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { NotificationCenter } from "@/components/NotificationCenter";
+import Footer from "@/components/Footer";
 
 const Dashboard = () => {
   const { user, profile, loading, signOut } = useAuth();
@@ -77,58 +78,38 @@ const Dashboard = () => {
       {/* Top Navigation Bar */}
       <nav className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
+          <div className="flex justify-between items-center h-32">
             {/* Logo and Brand */}
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
-                <div className="bg-gradient-to-r from-primary to-secondary p-2 rounded-xl">
-                  <GraduationCap className="h-6 w-6 text-white" />
+                <div className="bg-gradient-to-r from-primary to-secondary p-3 rounded-xl">
+                  <GraduationCap className="h-8 w-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">Seminar Hall Booking</h1>
-                  <p className="text-xs text-gray-500">Smart Campus System</p>
+                  <h1 className="text-2xl font-bold text-gray-900">Seminar Hall Booking</h1>
+                  <p className="text-sm text-gray-500">Smart Campus System</p>
                 </div>
               </div>
             </div>
 
-            {/* Navigation Links */}
-            <div className="hidden md:flex items-center space-x-8">
-              <a href="#dashboard" className="text-gray-700 hover:text-primary transition-colors flex items-center space-x-2">
-                <Home className="h-4 w-4" />
-                <span>Dashboard</span>
-              </a>
-              <a href="#bookings" className="text-gray-700 hover:text-primary transition-colors flex items-center space-x-2">
-                <Calendar className="h-4 w-4" />
-                <span>Bookings</span>
-              </a>
-              <a href="#halls" className="text-gray-700 hover:text-primary transition-colors flex items-center space-x-2">
-                <MapPin className="h-4 w-4" />
-                <span>Halls</span>
-              </a>
-              <a href="#profile" className="text-gray-700 hover:text-primary transition-colors flex items-center space-x-2">
-                <User className="h-4 w-4" />
-                <span>Profile</span>
-              </a>
-            </div>
-
             {/* Right Side - Notifications and User */}
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center gap-2">
               <NotificationCenter />
               
               {/* User Info */}
               <div className="flex items-center space-x-3">
                 <div className="text-right hidden sm:block">
-                  <p className="text-sm font-medium text-gray-900">{profile.name}</p>
+                  <p className="text-base font-semibold text-gray-900">{profile.name}</p>
                   <p className="text-xs text-gray-500">{getRoleDisplayName(profile.role)}</p>
                 </div>
-                <div className="bg-gradient-to-r from-primary to-secondary p-2 rounded-full">
+                <div className="bg-gradient-to-r from-primary to-secondary p-2.5 rounded-full">
                   {getRoleIcon(profile.role)}
                 </div>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={signOut}
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="border-gray-300 text-gray-700 hover:bg-red-600 hover:border-red-600 hover:text-white transition-colors"
                 >
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
@@ -138,20 +119,22 @@ const Dashboard = () => {
           </div>
         </div>
       </nav>
+      {/* Separator color bar to differentiate navbar and welcome section */}
+      <div className="h-2 bg-gradient-to-b from-secondary/30 to-transparent"></div>
 
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-primary to-secondary">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-gradient-to-r from-primary to-secondary shadow-inner ring-1 ring-black/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2">
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-white mb-2">
+            <h2 className="text-lg font-semibold text-white mb-0.5">
               Welcome back, {profile.name}!
             </h2>
-            <p className="text-white/90 text-lg">
+            <p className="text-white/90 text-xs">
               {getRoleDisplayName(profile.role)}
               {profile.department && ` • ${profile.department} Department`}
             </p>
-            <div className="mt-4">
-              <Badge className="bg-white/20 text-white border-white/30">
+            <div className="mt-1">
+              <Badge className="bg-white/30 text-white border-white/40 px-1.5 py-0.5 text-[9px]">
                 {profile.role.toUpperCase()}
               </Badge>
             </div>
@@ -165,18 +148,7 @@ const Dashboard = () => {
       </div>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="text-center">
-            <p className="text-gray-500 text-sm">
-              © 2025 VenueVista | Smart Campus System
-            </p>
-            <p className="text-gray-400 text-xs mt-1">
-              Streamlined hall booking management for educational institutions
-            </p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

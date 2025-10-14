@@ -27,34 +27,17 @@ export const NotificationCenter = () => {
     }
   };
 
-  const getNotificationVariant = (type: string) => {
-    switch (type) {
-      case 'booking_approved':
-        return 'success';
-      case 'booking_rejected':
-        return 'destructive';
-      case 'new_booking_request':
-      case 'approval_required':
-        return 'default';
-      case 'hall_changed':
-        return 'default';
-      default:
-        return 'default';
-    }
-  };
-
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="icon" className="relative">
+        <Button variant="outline" size="icon" className="relative hover:bg-transparent hover:text-inherit hover:border-inherit focus-visible:ring-0">
           <Bell className="h-4 w-4" />
           {unreadCount > 0 && (
-            <Badge 
-              variant="destructive" 
-              className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+            <span
+              className="absolute top-0.5 right-0.5 bg-red-600 text-white text-[10px] leading-none rounded-full h-4 min-w-4 px-1 flex items-center justify-center"
             >
               {unreadCount}
-            </Badge>
+            </span>
           )}
         </Button>
       </PopoverTrigger>
