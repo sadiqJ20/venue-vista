@@ -224,9 +224,6 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
 					<DialogDescription>
 						Provide event details and equipment needs. HOD, Principal and PRO will see this request.
 					</DialogDescription>
-					<Button variant="ghost" size="sm" onClick={onClose} className="absolute right-4 top-4">
-						<X className="h-4 w-4" />
-					</Button>
 				</DialogHeader>
 				
 				<form onSubmit={handleSubmit} className="space-y-4">
