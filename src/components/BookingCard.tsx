@@ -8,10 +8,13 @@ import { Calendar, Clock, Users, MapPin, CheckCircle, XCircle, Eye } from "lucid
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useEmailNotifications } from "@/hooks/useEmailNotifications";
+import { sendBookingNotification } from "@/lib/emailNotifications";
 import type { Database } from "@/integrations/supabase/types";
 
 interface Booking {
   id: string;
+  faculty_id?: string;
   faculty_name: string;
   faculty_phone?: string;
   organizer_name: string;
@@ -46,6 +49,7 @@ interface BookingCardProps {
 const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }: BookingCardProps) => {
   const { profile } = useAuth();
   const { toast } = useToast();
+  const { notifyPrincipalApproval, notifyPROApproval, notifyFacultyFinalApproval, notifyFacultyRejection } = useEmailNotifications();
   const [loading, setLoading] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -109,6 +113,19 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
       if (approvalError) throw approvalError;
 
       console.log(`Booking ${booking.id} approved successfully`);
+      
+      // Send email notification using unified function
+      try {
+        const actionBy = profile.role === 'hod' ? 'HOD' : profile.role === 'principal' ? 'Principal' : 'PRO';
+        // Treat approvals as an "Approved" decision for routing to next role
+        const status = 'Approved';
+        console.log('Approval email routing context:', { bookingId: booking.id, actionBy, status, nextStatus });
+        await sendBookingNotification(booking, actionBy, status);
+      } catch (emailError) {
+        console.error('Email notification error:', emailError);
+        // Don't fail the approval if email fails
+      }
+      
       toast({
         title: "Success",
         description: "Booking approved successfully",
@@ -159,6 +176,18 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
       if (approvalError) throw approvalError;
 
       console.log(`Booking ${booking.id} rejected successfully`);
+      
+      // Send rejection notification using unified function
+      try {
+        const actionBy = profile.role === 'hod' ? 'HOD' : profile.role === 'principal' ? 'Principal' : 'PRO';
+        const status = 'Rejected';
+        console.log('Rejection email routing context:', { bookingId: booking.id, actionBy, status, rejectionReason });
+        await sendBookingNotification(booking, actionBy, status, rejectionReason);
+      } catch (emailError) {
+        console.error('Email notification error:', emailError);
+        // Don't fail the rejection if email fails
+      }
+      
       toast({
         title: "Booking Rejected",
         description: "Rejection reason has been sent to faculty",
