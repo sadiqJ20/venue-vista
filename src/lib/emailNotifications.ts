@@ -36,17 +36,26 @@ export async function sendBookingNotification(
         const { data } = await supabase.from("profiles").select("email").eq("role", "pro").maybeSingle();
         recipientEmail = data?.email || "";
       } else if (actionBy === "PRO") {
-        // Final approval → notify faculty
-        const { data } = await supabase.from("profiles").select("email").eq("id", booking.faculty_id).maybeSingle();
-        recipientEmail = data?.email || "";
+        // Final approval → notify faculty (prefer email on booking to avoid RLS issues)
+        recipientEmail = booking.faculty_email || "";
+        if (!recipientEmail && booking.faculty_id) {
+          const { data } = await supabase.from("profiles").select("email").eq("id", booking.faculty_id).maybeSingle();
+          recipientEmail = data?.email || "";
+        }
       }
     } else if (status === "Rejected") {
       // Notify faculty on rejection
-      const { data } = await supabase.from("profiles").select("email").eq("id", booking.faculty_id).maybeSingle();
-      recipientEmail = data?.email || "";
+      recipientEmail = booking.faculty_email || "";
+      if (!recipientEmail && booking.faculty_id) {
+        const { data } = await supabase.from("profiles").select("email").eq("id", booking.faculty_id).maybeSingle();
+        recipientEmail = data?.email || "";
+      }
     }
 
-    if (!recipientEmail) return false;
+    if (!recipientEmail) {
+      console.warn("sendBookingNotification: No recipient email resolved", { status, actionBy, bookingId: booking?.id, faculty_id: booking?.faculty_id });
+      return false;
+    }
 
     const subject = status === "Pending"
       ? `New Hall Booking Request - ${booking.halls?.name || "Hall"}`
@@ -56,10 +65,41 @@ export async function sendBookingNotification(
 
     const message = `Booking update for ${booking.event_name} (${booking.event_date} ${booking.start_time}-${booking.end_time})`;
 
+    // Build descriptive comments aligned with workflow stage
+    let commentsText = "";
+    if (status === "Pending") {
+      commentsText = "Please review and approve/reject this booking request.";
+    } else if (status === "Approved") {
+      if (actionBy === "HOD") {
+        commentsText = "This booking has been approved by HOD and now requires your approval.";
+      } else if (actionBy === "Principal") {
+        commentsText = "This booking has been approved by both HOD and Principal. This is the final approval stage.";
+      } else if (actionBy === "PRO") {
+        commentsText = "Your booking request has been fully approved. This is the final approval stage.";
+      }
+    } else if (status === "Rejected") {
+      const reason = (rejectionReason ?? "").trim();
+      const reasonLine = reason ? ` Reason: ${reason}` : "";
+      commentsText = `Your booking request has been rejected. Please contact the ${actionBy} for more information or to submit a new request.${reasonLine}`;
+    }
+
+    // Derive recipient name for template greeting
+    const recipientName = ((): string => {
+      if (status === "Pending") return `${booking.department || ""}_HOD`.replace(/^_/,'');
+      if (status === "Approved") {
+        if (actionBy === "HOD") return "Principal";
+        if (actionBy === "Principal") return "PRO";
+        if (actionBy === "PRO") return booking.faculty_name || "Faculty";
+      }
+      if (status === "Rejected") return booking.faculty_name || "Faculty";
+      return "";
+    })();
+
     await sendTestEmail({
       recipientEmail,
       subject,
       message,
+      recipientName,
       faculty_name: booking.faculty_name,
       faculty_contact: booking.faculty_phone ?? "",
       department: booking.department,
@@ -70,7 +110,7 @@ export async function sendBookingNotification(
       end_time: booking.end_time,
       decision: status,
       decision_taken_by: actionBy,
-      comments: rejectionReason ?? "",
+      comments: commentsText,
       action_url: "/dashboard",
     });
 

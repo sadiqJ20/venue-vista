@@ -27,7 +27,8 @@ const EmailTestPage = () => {
   const [decision, setDecision] = useState("Pending");
   const [decisionBy, setDecisionBy] = useState("HOD");
   const [comments, setComments] = useState("Please review and approve/reject this booking request.");
-  const [actionUrl, setActionUrl] = useState("/dashboard");
+  const defaultActionUrl = typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : '/dashboard';
+  const [actionUrl, setActionUrl] = useState(defaultActionUrl);
 
   const handleSend = async () => {
     if (!toEmail) {
@@ -40,6 +41,7 @@ const EmailTestPage = () => {
         recipientEmail: toEmail,
         subject,
         message,
+        recipientName: facultyName,
         faculty_name: facultyName,
         faculty_contact: facultyContact,
         department,
