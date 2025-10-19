@@ -29,7 +29,7 @@ const Auth = () => {
     return null;
   }
 
-  // Sign Up State
+  // Sign Up State{REGISTRATION}
   const [signUpData, setSignUpData] = useState({
     email: '',
     password: '',
@@ -40,7 +40,7 @@ const Auth = () => {
     uniqueId: ''
   });
 
-  // Sign In State
+  // Sign In State{LOGIN}
   const [signInData, setSignInData] = useState({
     email: '',
     password: '',

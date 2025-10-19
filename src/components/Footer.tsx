@@ -36,8 +36,8 @@ const Footer = () => {
     {
       id: 3,
       name: "SUMA N~",
-      // Place actual file at public/team/WhatsApp Image 2025-10-09 at 12.56.18_ee9db047.jpg
-      photo: "/team/WhatsApp%20Image%202025-10-09%20at%2012.56.18_ee9db047.jpg",
+      // Place actual file at public/team/WhatsApp Image 2025-10-19 at 19.00.22_13a52a4e.jpg
+      photo: "/team/WhatsApp%20Image%202025-10-19%20at%2019.00.22_13a52a4e.jpg",
       fallback: "https://ui-avatars.com/api/?name=SUMA+M&background=0D8ABC&color=fff&size=128",
       social: {
         github: "https://github.com/suma-dev-12",
