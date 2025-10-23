@@ -41,17 +41,9 @@ const Index = () => {
           <Button 
             size="lg" 
             onClick={() => navigate('/auth')} 
-            className="mr-4 bg-primary hover:bg-primary-hover text-white shadow-button hover:shadow-button-hover rounded-button transition-all duration-200"
+            className="bg-primary hover:bg-primary-hover text-white shadow-button hover:shadow-button-hover rounded-button transition-all duration-200 block mx-auto"
           >
             Get Started
-          </Button>
-          <Button 
-            variant="outline" 
-            size="lg" 
-            onClick={() => navigate('/auth')}
-            className="border-primary text-primary hover:bg-primary hover:text-white rounded-button transition-all duration-200"
-          >
-            Sign In
           </Button>
         </div>
       </div>
