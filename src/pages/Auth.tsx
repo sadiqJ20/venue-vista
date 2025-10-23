@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { GraduationCap, Users, UserCheck, Briefcase } from "lucide-react";
 import PMCHeader from "@/components/PMCHeader";
 import Footer from "@/components/Footer";
+import { supabase } from "@/integrations/supabase/client";
 
 type Department = 'CSE' | 'IT' | 'ECE' | 'EEE' | 'MECH' | 'CIVIL' | 'AERO' | 'CHEMICAL' | 'AIDS' | 'CSBS';
 type UserRole = 'faculty' | 'hod' | 'principal' | 'pro';
@@ -22,6 +23,11 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({
+    mobile: '',
+    email: '',
+    name: ''
+  });
 
   // Redirect if already authenticated
   if (user) {
@@ -40,6 +46,70 @@ const Auth = () => {
     uniqueId: ''
   });
 
+  // Validate phone number (10 digits, numeric only)
+  const validatePhoneNumber = (phone: string) => {
+    if (!phone) {
+      setValidationErrors(prev => ({ ...prev, mobile: '' }));
+      return true;
+    }
+    if (!/^\d*$/.test(phone)) {
+      setValidationErrors(prev => ({ ...prev, mobile: 'Only numeric characters (0-9) are allowed' }));
+      return false;
+    }
+    if (phone.length !== 10) {
+      setValidationErrors(prev => ({ ...prev, mobile: 'Phone number must be exactly 10 digits' }));
+      return false;
+    }
+    setValidationErrors(prev => ({ ...prev, mobile: '' }));
+    return true;
+  };
+
+  // Check if email already exists
+  const checkEmailUniqueness = async (email: string) => {
+    if (!email) {
+      setValidationErrors(prev => ({ ...prev, email: '' }));
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('email', email.toLowerCase())
+        .maybeSingle();
+
+      if (data) {
+        setValidationErrors(prev => ({ ...prev, email: 'This email is already registered.' }));
+      } else {
+        setValidationErrors(prev => ({ ...prev, email: '' }));
+      }
+    } catch (err) {
+      console.error('Error checking email:', err);
+    }
+  };
+
+  // Check if name already exists
+  const checkNameUniqueness = async (name: string) => {
+    if (!name) {
+      setValidationErrors(prev => ({ ...prev, name: '' }));
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('name', name)
+        .maybeSingle();
+
+      if (data) {
+        setValidationErrors(prev => ({ ...prev, name: 'This name is already taken.' }));
+      } else {
+        setValidationErrors(prev => ({ ...prev, name: '' }));
+      }
+    } catch (err) {
+      console.error('Error checking name:', err);
+    }
+  };
+
   // Sign In State{LOGIN}
   const [signInData, setSignInData] = useState({
     email: '',
@@ -51,6 +121,22 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate phone number
+    if (!validatePhoneNumber(signUpData.mobile)) {
+      return;
+    }
+
+    // Check for validation errors
+    if (validationErrors.mobile || validationErrors.email || validationErrors.name) {
+      toast({
+        title: "Validation Error",
+        description: "Please fix all validation errors before submitting.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -165,7 +251,6 @@ const Auth = () => {
                     <TabsTrigger value="signin" className="data-[state=active]:bg-primary data-[state=active]:text-white">Sign In</TabsTrigger>
                     <TabsTrigger value="signup" className="data-[state=active]:bg-primary data-[state=active]:text-white">Sign Up</TabsTrigger>
                   </TabsList>
-                
                   <TabsContent value="signin" className="space-y-4">
                     <form onSubmit={handleSignIn} className="space-y-4">
                       <div className="grid grid-cols-1 gap-4">
@@ -274,9 +359,17 @@ const Auth = () => {
                             id="signup-name"
                             placeholder="Enter your full name"
                             value={signUpData.name}
-                            onChange={(e) => setSignUpData({...signUpData, name: e.target.value})}
+                            onChange={(e) => {
+                              setSignUpData({...signUpData, name: e.target.value});
+                              setValidationErrors(prev => ({ ...prev, name: '' }));
+                            }}
+                            onBlur={(e) => checkNameUniqueness(e.target.value)}
                             required
+                            className={validationErrors.name ? 'border-red-500' : ''}
                           />
+                          {validationErrors.name && (
+                            <p className="text-red-500 text-sm mt-1">{validationErrors.name}</p>
+                          )}
                         </div>
                         <div>
                           <Label htmlFor="signup-email">Email</Label>
@@ -285,9 +378,17 @@ const Auth = () => {
                             type="email"
                             placeholder="Enter your email"
                             value={signUpData.email}
-                            onChange={(e) => setSignUpData({...signUpData, email: e.target.value})}
+                            onChange={(e) => {
+                              setSignUpData({...signUpData, email: e.target.value});
+                              setValidationErrors(prev => ({ ...prev, email: '' }));
+                            }}
+                            onBlur={(e) => checkEmailUniqueness(e.target.value)}
                             required
+                            className={validationErrors.email ? 'border-red-500' : ''}
                           />
+                          {validationErrors.email && (
+                            <p className="text-red-500 text-sm mt-1">{validationErrors.email}</p>
+                          )}
                         </div>
                         <div>
                           <Label htmlFor="signup-password">Password</Label>
@@ -304,11 +405,23 @@ const Auth = () => {
                           <Label htmlFor="signup-mobile">Mobile Number</Label>
                           <Input
                             id="signup-mobile"
-                            placeholder="Enter your mobile number"
+                            placeholder="Enter your mobile number (10 digits)"
                             value={signUpData.mobile}
-                            onChange={(e) => setSignUpData({...signUpData, mobile: e.target.value})}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              // Only allow numeric input and max 10 characters
+                              if (/^\d*$/.test(value) && value.length <= 10) {
+                                setSignUpData({...signUpData, mobile: value});
+                                validatePhoneNumber(value);
+                              }
+                            }}
+                            maxLength={10}
                             required
+                            className={validationErrors.mobile ? 'border-red-500' : ''}
                           />
+                          {validationErrors.mobile && (
+                            <p className="text-red-500 text-sm mt-1">{validationErrors.mobile}</p>
+                          )}
                         </div>
                         <div className="relative">
                           <Label htmlFor="signup-role">Role</Label>

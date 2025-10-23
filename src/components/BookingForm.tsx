@@ -68,7 +68,7 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
 			setEmailStatus(null);
 		}
 	}, [emailStatus, setEmailStatus, toast]);
-	
+
 	const [formData, setFormData] = useState({
 		organizerName: '',
 		facultyName: '',
@@ -81,7 +81,7 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
 		eventDate: '',
 		startTime: '',
 		endTime: '',
-		attendeesCount: 0,
+		attendeesCount: 1,
 		requiredAC: false,
 		requiredMic: false,
 		requiredProjector: false,
@@ -111,9 +111,13 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
 			return false;
 		}
 
-		// Attendees: at least 1
+		// Attendees: at least 1 and not exceeding hall capacity
 		if (!formData.attendeesCount || formData.attendeesCount < 1) {
 			toast({ title: "Invalid attendees", description: "Attendees must be at least 1.", variant: "destructive" });
+			return false;
+		}
+		if (formData.attendeesCount > hall.capacity) {
+			toast({ title: "Exceeds hall capacity", description: `Number of attendees (${formData.attendeesCount}) exceeds the hall capacity of ${hall.capacity}. Please select a larger hall or reduce attendees.`, variant: "destructive" });
 			return false;
 		}
 
@@ -324,12 +328,18 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
 							/>
 						</div>
 						<div>
-							<Label>No. of Attendees</Label>
+							<Label>No. of Attendees (Max: {hall.capacity})</Label>
 							<Input
 								type="number"
 								min={1}
+								max={hall.capacity}
 								value={formData.attendeesCount}
-								onChange={(e) => setFormData({ ...formData, attendeesCount: Math.max(1, parseInt(e.target.value) || 0) })}
+								onChange={(e) => {
+									const value = parseInt(e.target.value) || 1;
+									const clampedValue = Math.min(Math.max(1, value), hall.capacity);
+									setFormData({ ...formData, attendeesCount: clampedValue });
+								}}
+								className="no-spinner"
 								required
 							/>
 						</div>
@@ -424,6 +434,7 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
 								min={0}
 								value={formData.guestLecturesCount}
 								onChange={(e) => setFormData({ ...formData, guestLecturesCount: Math.max(0, parseInt(e.target.value) || 0) })}
+								className="no-spinner"
 							/>
 						</div>
 						<div>
