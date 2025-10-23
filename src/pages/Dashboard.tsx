@@ -133,11 +133,11 @@ const Dashboard = () => {
               {getRoleDisplayName(profile.role)}
               {profile.department && ` • ${profile.department} Department`}
             </p>
-            <div className="mt-1">
+            {/* <div className="mt-1">
               <Badge className="bg-white/30 text-white border-white/40 px-1.5 py-0.5 text-[9px]">
-                {profile.role.toUpperCase()}
+                {profile.role.toUpperCase()} 
               </Badge>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>
