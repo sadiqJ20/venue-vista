@@ -5,7 +5,8 @@ import FacultyDashboard from "@/components/dashboards/FacultyDashboard";
 import HODDashboard from "@/components/dashboards/HODDashboard";
 import PrincipalDashboard from "@/components/dashboards/PrincipalDashboard";
 import PRODashboard from "@/components/dashboards/PRODashboard";
-import { Loader2, GraduationCap, LogOut, Bell, Home, Calendar, MapPin, User, Settings } from "lucide-react";
+import ChairmanDashboard from "@/components/dashboards/ChairmanDashboard";
+import { Loader2, GraduationCap, LogOut, Bell, Home, Calendar, MapPin, User, Settings, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -44,6 +45,7 @@ const Dashboard = () => {
       case 'hod': return 'Head of Department';
       case 'principal': return 'Principal';
       case 'pro': return 'Public Relations Officer';
+      case 'chairman': return 'Chairman';
       default: return role;
     }
   };
@@ -54,6 +56,7 @@ const Dashboard = () => {
       case 'hod': return <GraduationCap className="h-5 w-5" />;
       case 'principal': return <GraduationCap className="h-5 w-5" />;
       case 'pro': return <User className="h-5 w-5" />;
+      case 'chairman': return <Shield className="h-5 w-5" />;
       default: return <User className="h-5 w-5" />;
     }
   };
@@ -68,6 +71,8 @@ const Dashboard = () => {
         return <PrincipalDashboard />;
       case 'pro':
         return <PRODashboard />;
+      case 'chairman':
+        return <ChairmanDashboard />;
       default:
         return <div>Invalid role</div>;
     }

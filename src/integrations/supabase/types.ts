@@ -482,7 +482,7 @@ export type Database = {
         | "AI_ML"
       hall_type: "Auditorium" | "Smart Classroom"
       institution_type: "School" | "Diploma" | "Polytechnic" | "Engineering"
-      user_role: "faculty" | "hod" | "principal" | "pro"
+      user_role: "faculty" | "hod" | "principal" | "pro" | "chairman"
     }
     CompositeTypes: {
       [_ in never]: never
