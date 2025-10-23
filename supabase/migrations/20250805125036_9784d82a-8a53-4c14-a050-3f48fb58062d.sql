@@ -1,7 +1,7 @@
 -- Create enum types for better data integrity
 CREATE TYPE public.user_role AS ENUM ('faculty', 'hod', 'principal', 'pro');
 CREATE TYPE public.department_name AS ENUM ('CSE', 'IT', 'ECE', 'EEE', 'MECH', 'CIVIL', 'AERO', 'CHEMICAL', 'AIDS', 'CSBS');
-CREATE TYPE public.block_name AS ENUM ('East Block', 'West Block', 'Main Block', 'Diploma Block');
+CREATE TYPE public.block_name AS ENUM ('East Block', 'West Block', 'Main Block', 'Diploma Block','OutDoor');
 CREATE TYPE public.hall_type AS ENUM ('Auditorium', 'Smart Classroom');
 CREATE TYPE public.booking_status AS ENUM ('pending_hod', 'pending_principal', 'pending_pro', 'approved', 'rejected');
 CREATE TYPE public.institution_type AS ENUM ('School', 'Diploma', 'Polytechnic', 'Engineering');
@@ -215,7 +215,7 @@ WITH CHECK (
 -- Insert halls data
 INSERT INTO public.halls (name, block, type, capacity, has_ac, has_mic, has_projector, has_audio_system) VALUES
 -- East Block
-('East Auditorium', 'East Block', 'Auditorium', 300, true, true, true, true),
+('East Auditorium', 'East Block', 'Auditorium', 500, true, true, true, true),
 ('East Smart Classroom 1', 'East Block', 'Smart Classroom', 80, true, true, true, false),
 ('East Smart Classroom 2', 'East Block', 'Smart Classroom', 80, true, true, true, false),
 -- West Block
@@ -226,6 +226,7 @@ INSERT INTO public.halls (name, block, type, capacity, has_ac, has_mic, has_proj
 ('Main Auditorium', 'Main Block', 'Auditorium', 500, true, true, true, true),
 ('Main Smart Classroom 1', 'Main Block', 'Smart Classroom', 100, true, true, true, true),
 ('Main Smart Classroom 2', 'Main Block', 'Smart Classroom', 100, true, true, true, true),
+('OutDoor Auditorium', 'OutDoor', 'Auditorium', 500, true, true, true, true);
 -- Diploma Block
 ('Diploma Auditorium', 'Diploma Block', 'Auditorium', 200, true, true, true, true),
 ('Diploma Smart Classroom 1', 'Diploma Block', 'Smart Classroom', 60, true, true, true, false),

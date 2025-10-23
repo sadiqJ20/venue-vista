@@ -232,9 +232,9 @@ const FacultyDashboard = () => {
                           </Badge>
                         )}
                       </CardTitle>
-                      <CardDescription className="text-gray-600">
+                      {/* { <CardDescription className="text-gray-600">
                         {hall.block} • {hall.type}
-                      </CardDescription>
+                      </CardDescription> } */}
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex items-center gap-2 text-sm text-gray-600">
