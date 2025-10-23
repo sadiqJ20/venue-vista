@@ -101,6 +101,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string, userData: SignUpData) => {
+    // Validate phone number (must be exactly 10 digits and numeric)
+    if (!userData.mobile_number || !/^\d{10}$/.test(userData.mobile_number)) {
+      return { error: { message: 'Phone number must be exactly 10 digits and contain only numbers.' } };
+    }
+
+    // Check for duplicate email
+    const { data: existingEmail, error: emailCheckError } = await supabase
+      .from('profiles')
+      .select('email')
+      .eq('email', email.toLowerCase())
+      .maybeSingle();
+
+    if (emailCheckError && emailCheckError.code !== 'PGRST116') {
+      return { error: emailCheckError };
+    }
+
+    if (existingEmail) {
+      return { error: { message: 'This email is already registered.' } };
+    }
+
+    // Check for duplicate name
+    const { data: existingName, error: nameCheckError } = await supabase
+      .from('profiles')
+      .select('name')
+      .eq('name', userData.name)
+      .maybeSingle();
+
+    if (nameCheckError && nameCheckError.code !== 'PGRST116') {
+      return { error: nameCheckError };
+    }
+
+    if (existingName) {
+      return { error: { message: 'This name is already taken.' } };
+    }
+
     // Check for HOD uniqueness before proceeding with registration
     if (userData.role === 'hod' && userData.department) {
       const { data: existingHod, error: hodCheckError } = await supabase
