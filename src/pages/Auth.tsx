@@ -8,13 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { GraduationCap, Users, UserCheck, Briefcase } from "lucide-react";
+import { GraduationCap, Users, UserCheck, Briefcase, Shield } from "lucide-react";
 import PMCHeader from "@/components/PMCHeader";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
 
 type Department = 'CSE' | 'IT' | 'ECE' | 'EEE' | 'MECH' | 'CIVIL' | 'AERO' | 'CHEMICAL' | 'AIDS' | 'CSBS' | 'MCA' | 'MBA' | 'TRAINING' | 'PLACEMENT' | 'SCIENCE & HUMANITIES' | 'IIIE CELL' | 'HR' | 'INNOVATION' | 'AI_ML';
-type UserRole = 'faculty' | 'hod' | 'principal' | 'pro';
+type UserRole = 'faculty' | 'hod' | 'principal' | 'pro' | 'chairman';
 
 const departments: Department[] = ['CSE', 'IT', 'ECE', 'EEE', 'MECH', 'CIVIL', 'AERO', 'CHEMICAL', 'AIDS', 'CSBS', 'MCA', 'MBA', 'TRAINING', 'PLACEMENT', 'SCIENCE & HUMANITIES', 'IIIE CELL', 'HR', 'INNOVATION', 'AI_ML'];
 
@@ -211,6 +211,7 @@ const Auth = () => {
       case 'hod': return <UserCheck className="h-5 w-5" />;
       case 'principal': return <GraduationCap className="h-5 w-5" />;
       case 'pro': return <Briefcase className="h-5 w-5" />;
+      case 'chairman': return <Shield className="h-5 w-5" />;
       default: return null;
     }
   };
@@ -305,6 +306,12 @@ const Auth = () => {
                                 <div className="flex items-center gap-2">
                                   {getRoleIcon('pro')}
                                   PRO
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="chairman">
+                                <div className="flex items-center gap-2">
+                                  {getRoleIcon('chairman')}
+                                  Chairman
                                 </div>
                               </SelectItem>
                             </SelectContent>
@@ -452,6 +459,12 @@ const Auth = () => {
                                 <div className="flex items-center gap-2">
                                   {getRoleIcon('pro')}
                                   PRO
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="chairman">
+                                <div className="flex items-center gap-2">
+                                  {getRoleIcon('chairman')}
+                                  Chairman
                                 </div>
                               </SelectItem>
                             </SelectContent>
