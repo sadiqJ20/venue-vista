@@ -1,4 +1,4 @@
-import type { Config } from "tailwindcss";
+*import type { Config } from "tailwindcss";
 
 export default {
 	darkMode: ["class"],
@@ -19,34 +19,34 @@ export default {
 		},
 		extend: {
 			colors: {
-				// Smart Campus Blue Theme
+				// Premium Corporate (Navy & Gold Theme)
 				primary: {
-					DEFAULT: '#2563EB', // Vibrant Blue
+					DEFAULT: '#0F172A', // Navy Blue
 					foreground: '#FFFFFF',
-					hover: '#1D4ED8',
-					light: '#3B82F6',
-					dark: '#1E40AF'
+					hover: '#1E3A8A',
+					light: '#1F2937',
+					dark: '#0B1223'
 				},
 				secondary: {
-					DEFAULT: '#6366F1', // Indigo
+					DEFAULT: '#1E3A8A', // Deep Blue
 					foreground: '#FFFFFF',
-					hover: '#4F46E5',
-					light: '#818CF8',
-					dark: '#4338CA'
+					hover: '#1E40AF',
+					light: '#334155',
+					dark: '#172554'
 				},
 				accent: {
-					DEFAULT: '#10B981', // Emerald Green
-					foreground: '#FFFFFF',
-					hover: '#059669',
-					light: '#34D399',
-					dark: '#047857'
+					DEFAULT: '#FACC15', // Gold
+					foreground: '#111827',
+					hover: '#EAB308',
+					light: '#FDE68A',
+					dark: '#CA8A04'
 				},
 				background: {
-					DEFAULT: '#F9FAFB', // Light Grayish White
+					DEFAULT: '#F8FAFC', // Soft White
 					secondary: '#FFFFFF',
-					tertiary: '#F3F4F6'
+					tertiary: '#F1F5F9'
 				},
-				foreground: '#111827', // Main text color
+				foreground: '#111827', // Rich Black for primary text
 				text: {
 					primary: '#111827',
 					secondary: '#6B7280',
@@ -82,15 +82,15 @@ export default {
 				}
 			},
 			backgroundImage: {
-				'gradient-primary': 'linear-gradient(90deg, #2563EB, #6366F1)',
-				'gradient-hero': 'linear-gradient(135deg, #2563EB 0%, #6366F1 100%)',
-				'gradient-card': 'linear-gradient(145deg, #FFFFFF 0%, #F9FAFB 100%)'
+				'gradient-primary': 'linear-gradient(90deg, #0F172A, #1E3A8A)',
+				'gradient-hero': 'linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%)',
+				'gradient-card': 'linear-gradient(145deg, #FFFFFF 0%, #F8FAFC 100%)'
 			},
 			boxShadow: {
 				'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
 				'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-				'button': '0 2px 4px rgba(37, 99, 235, 0.2)',
-				'button-hover': '0 4px 8px rgba(37, 99, 235, 0.3)'
+				'button': '0 2px 4px rgba(15, 23, 42, 0.2)',
+				'button-hover': '0 4px 8px rgba(15, 23, 42, 0.3)'
 			},
 			borderRadius: {
 				'card': '12px',
