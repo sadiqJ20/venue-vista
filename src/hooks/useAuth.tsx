@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-type Department = 'CSE' | 'IT' | 'ECE' | 'EEE' | 'MECH' | 'CIVIL' | 'AERO' | 'CHEMICAL' | 'AIDS' | 'CSBS';
+type Department = 'CSE' | 'IT' | 'ECE' | 'EEE' | 'MECH' | 'CIVIL' | 'AERO' | 'CHEMICAL' | 'AIDS' | 'CSBS' | 'MCA' | 'MBA' | 'TRAINING' | 'PLACEMENT' | 'SCIENCE & HUMANITIES' | 'IIIE CELL' | 'HR' | 'INNOVATION' | 'AI_ML';
 type UserRole = 'faculty' | 'hod' | 'principal' | 'pro';
 
 interface Profile {

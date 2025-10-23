@@ -8,10 +8,6 @@ export type Json =
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "12.2.12 (cd3cf9e)"
-  }
   public: {
     Tables: {
       booking_approvals: {
@@ -56,12 +52,71 @@ export type Database = {
           },
         ]
       }
+      booking_switch_logs: {
+        Row: {
+          booking_id: string
+          changed_at: string
+          changed_by: string
+          id: string
+          new_hall_id: string
+          old_hall_id: string
+          reason: string | null
+        }
+        Insert: {
+          booking_id: string
+          changed_at?: string
+          changed_by: string
+          id?: string
+          new_hall_id: string
+          old_hall_id: string
+          reason?: string | null
+        }
+        Update: {
+          booking_id?: string
+          changed_at?: string
+          changed_by?: string
+          id?: string
+          new_hall_id?: string
+          old_hall_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_switch_logs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_switch_logs_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_switch_logs_new_hall_id_fkey"
+            columns: ["new_hall_id"]
+            isOneToOne: false
+            referencedRelation: "halls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_switch_logs_old_hall_id_fkey"
+            columns: ["old_hall_id"]
+            isOneToOne: false
+            referencedRelation: "halls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
+          attendee_years: string[] | null
           attendees_count: number
           created_at: string
           department: Database["public"]["Enums"]["department_name"]
-          description: string | null
           end_time: string
           event_date: string
           event_name: string
@@ -77,7 +132,6 @@ export type Database = {
           id: string
           institution_type: Database["public"]["Enums"]["institution_type"]
           organizer_name: string
-          original_hall_id: string | null
           rejection_reason: string | null
           required_ac: boolean | null
           required_audio_system: boolean | null
@@ -88,10 +142,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          attendee_years?: string[] | null
           attendees_count: number
           created_at?: string
           department: Database["public"]["Enums"]["department_name"]
-          description?: string | null
           end_time: string
           event_date: string
           event_name: string
@@ -107,7 +161,6 @@ export type Database = {
           id?: string
           institution_type: Database["public"]["Enums"]["institution_type"]
           organizer_name: string
-          original_hall_id?: string | null
           rejection_reason?: string | null
           required_ac?: boolean | null
           required_audio_system?: boolean | null
@@ -118,10 +171,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          attendee_years?: string[] | null
           attendees_count?: number
           created_at?: string
           department?: Database["public"]["Enums"]["department_name"]
-          description?: string | null
           end_time?: string
           event_date?: string
           event_name?: string
@@ -137,7 +190,6 @@ export type Database = {
           id?: string
           institution_type?: Database["public"]["Enums"]["institution_type"]
           organizer_name?: string
-          original_hall_id?: string | null
           rejection_reason?: string | null
           required_ac?: boolean | null
           required_audio_system?: boolean | null
@@ -156,6 +208,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "bookings_hall_changed_by_fkey"
+            columns: ["hall_changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "bookings_hall_id_fkey"
             columns: ["hall_id"]
             isOneToOne: false
@@ -164,44 +223,58 @@ export type Database = {
           },
         ]
       }
-      email_logs: {
+      email_notifications: {
         Row: {
-          body: string
           booking_id: string | null
           created_at: string
+          email_body: string
+          email_sent: boolean
+          email_subject: string
           error_message: string | null
           id: string
-          notification_type: string
           recipient_email: string
-          sent_at: string
-          status: string
-          subject: string
+          recipient_name: string | null
+          retry_count: number
+          sent_at: string | null
+          type: string
         }
         Insert: {
-          body: string
           booking_id?: string | null
           created_at?: string
+          email_body: string
+          email_sent?: boolean
+          email_subject: string
           error_message?: string | null
           id?: string
-          notification_type: string
           recipient_email: string
-          sent_at?: string
-          status?: string
-          subject: string
+          recipient_name?: string | null
+          retry_count?: number
+          sent_at?: string | null
+          type: string
         }
         Update: {
-          body?: string
           booking_id?: string | null
           created_at?: string
+          email_body?: string
+          email_sent?: boolean
+          email_subject?: string
           error_message?: string | null
           id?: string
-          notification_type?: string
           recipient_email?: string
-          sent_at?: string
-          status?: string
-          subject?: string
+          recipient_name?: string | null
+          retry_count?: number
+          sent_at?: string | null
+          type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "email_notifications_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       halls: {
         Row: {
@@ -250,9 +323,8 @@ export type Database = {
           created_at: string
           data: Json | null
           id: string
+          is_read: boolean
           message: string
-          read: boolean | null
-          recipient_profile_id: string | null
           title: string
           type: string
           user_id: string
@@ -261,9 +333,8 @@ export type Database = {
           created_at?: string
           data?: Json | null
           id?: string
+          is_read?: boolean
           message: string
-          read?: boolean | null
-          recipient_profile_id?: string | null
           title: string
           type: string
           user_id: string
@@ -272,17 +343,16 @@ export type Database = {
           created_at?: string
           data?: Json | null
           id?: string
+          is_read?: boolean
           message?: string
-          read?: boolean | null
-          recipient_profile_id?: string | null
           title?: string
           type?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "notifications_recipient_profile_id_fkey"
-            columns: ["recipient_profile_id"]
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -329,7 +399,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -337,11 +415,14 @@ export type Database = {
     }
     Functions: {
       get_available_halls: {
-        Args: { p_end: string; p_event_date: string; p_start: string }
+        Args: {
+          booking_date: string
+          end_time: string
+          start_time: string
+        }
         Returns: {
           block: Database["public"]["Enums"]["block_name"]
           capacity: number
-          created_at: string
           has_ac: boolean | null
           has_audio_system: boolean | null
           has_mic: boolean | null
@@ -349,45 +430,30 @@ export type Database = {
           id: string
           name: string
           type: Database["public"]["Enums"]["hall_type"]
-          updated_at: string
         }[]
-      }
-      is_hall_available: {
-        Args: {
-          end_time_param: string
-          event_date_param: string
-          exclude_booking_id?: string
-          hall_id_param: string
-          start_time_param: string
-        }
-        Returns: boolean
       }
       send_notification: {
         Args: {
-          data_param?: Json
-          message_param: string
-          title_param: string
-          type_param: string
-          user_id_param: string
-        }
-        Returns: string
-      }
-      switch_booking_hall: {
-        Args: {
-          p_booking_id: string
-          p_new_end?: string
-          p_new_hall_id: string
-          p_new_start?: string
+          recipient_user_id: string
+          title: string
+          message: string
+          type: string
+          data?: Json
         }
         Returns: {
-          booking_id: string
-          new_hall_id: string
-          old_hall_id: string
-        }[]
+          created_at: string
+          data: Json | null
+          id: string
+          is_read: boolean
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
       }
     }
     Enums: {
-      block_name: "East Block" | "West Block" | "Main Block" | "Diploma Block"
+      block_name: "East Block" | "West Block" | "Main Block" | "Diploma Block" | "OutDoor" | "Innovation Block"
       booking_status:
         | "pending_hod"
         | "pending_principal"
@@ -405,6 +471,15 @@ export type Database = {
         | "CHEMICAL"
         | "AIDS"
         | "CSBS"
+        | "MCA"
+        | "MBA"
+        | "TRAINING"
+        | "PLACEMENT"
+        | "SCIENCE & HUMANITIES"
+        | "IIIE CELL"
+        | "HR"
+        | "INNOVATION"
+        | "AI_ML"
       hall_type: "Auditorium" | "Smart Classroom"
       institution_type: "School" | "Diploma" | "Polytechnic" | "Engineering"
       user_role: "faculty" | "hod" | "principal" | "pro"
@@ -416,148 +491,3 @@ export type Database = {
 }
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
-
-export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
-    }
-    ? R
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
-
-export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
-
-export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
-
-export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
-
-export const Constants = {
-  public: {
-    Enums: {
-      block_name: ["East Block", "West Block", "Main Block", "Diploma Block"],
-      booking_status: [
-        "pending_hod",
-        "pending_principal",
-        "pending_pro",
-        "approved",
-        "rejected",
-      ],
-      department_name: [
-        "CSE",
-        "IT",
-        "ECE",
-        "EEE",
-        "MECH",
-        "CIVIL",
-        "AERO",
-        "CHEMICAL",
-        "AIDS",
-        "CSBS",
-      ],
-      hall_type: ["Auditorium", "Smart Classroom"],
-      institution_type: ["School", "Diploma", "Polytechnic", "Engineering"],
-      user_role: ["faculty", "hod", "principal", "pro"],
-    },
-  },
-} as const

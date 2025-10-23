@@ -12,10 +12,10 @@ import { GraduationCap, Users, UserCheck, Briefcase } from "lucide-react";
 import PMCHeader from "@/components/PMCHeader";
 import Footer from "@/components/Footer";
 
-type Department = 'CSE' | 'IT' | 'ECE' | 'EEE' | 'MECH' | 'CIVIL' | 'AERO' | 'CHEMICAL' | 'AIDS' | 'CSBS';
+type Department = 'CSE' | 'IT' | 'ECE' | 'EEE' | 'MECH' | 'CIVIL' | 'AERO' | 'CHEMICAL' | 'AIDS' | 'CSBS' | 'MCA' | 'MBA' | 'TRAINING' | 'PLACEMENT' | 'SCIENCE & HUMANITIES' | 'IIIE CELL' | 'HR' | 'INNOVATION' | 'AI_ML';
 type UserRole = 'faculty' | 'hod' | 'principal' | 'pro';
 
-const departments: Department[] = ['CSE', 'IT', 'ECE', 'EEE', 'MECH', 'CIVIL', 'AERO', 'CHEMICAL', 'AIDS', 'CSBS'];
+const departments: Department[] = ['CSE', 'IT', 'ECE', 'EEE', 'MECH', 'CIVIL', 'AERO', 'CHEMICAL', 'AIDS', 'CSBS', 'MCA', 'MBA', 'TRAINING', 'PLACEMENT', 'SCIENCE & HUMANITIES', 'IIIE CELL', 'HR', 'INNOVATION', 'AI_ML'];
 
 const Auth = () => {
   const { signUp, signIn, user } = useAuth();
