@@ -127,4 +127,4 @@ All colors MUST be HSL.
     -moz-appearance: textfield;
     appearance: textfield;
   }
-}
+}   /* Firefox */
