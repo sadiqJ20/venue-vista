@@ -268,20 +268,6 @@ const FacultyDashboard = () => {
                 {filteredHalls.map((hall, idx) => (
                   <Card key={hall.id} className={`shadow-card border border-border rounded-card bg-card hover:shadow-card-hover transition-all duration-200 ${!hall.isAvailable ? 'opacity-60' : ''}`}>
                     <CardHeader>
-<<<<<<< HEAD
-                      <CardTitle className="flex items-center gap-2 text-gray-900">
-                        <MapPin className="h-5 w-5 text-primary" />
-                        {hall.name}
-                        {!hall.isAvailable && (
-                          <Badge className="ml-auto bg-red-500 text-white">
-                            Booked
-                          </Badge>
-                        )}
-                      </CardTitle>
-                      {/* { <CardDescription className="text-gray-600">
-                        {hall.block} • {hall.type}
-                      </CardDescription> } */}
-=======
                       <div className="flex items-center gap-4">
                         {(() => {
                           const src = pickImageForHall(hall, idx) || (customImages.length ? customImages[idx % customImages.length] : randomImageForHall(hall, 128, 128));
@@ -310,7 +296,6 @@ const FacultyDashboard = () => {
                           </CardDescription>
                         </div>
                       </div>
->>>>>>> af46ef4 (feat add hall photos and cycle images across halls and fix header layout)
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex items-center gap-2 text-sm text-gray-600">
