@@ -7,6 +7,12 @@ Modern, professional, and trustworthy design for educational institutions
 All colors MUST be HSL.
 */
 
+/* College Seminar Hall Booking System Design System
+Modern, professional, and trustworthy design for educational institutions
+All colors MUST be HSL.
+*/
+
+
 @layer base {
   :root {
     /* Smart Campus Blue Theme */
@@ -127,4 +133,4 @@ All colors MUST be HSL.
     -moz-appearance: textfield;
     appearance: textfield;
   }
-}
+}   /* Firefox */
