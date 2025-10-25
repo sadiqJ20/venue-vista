@@ -87,9 +87,11 @@ const Dashboard = () => {
             {/* Logo and Brand */}
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
-                <div className="bg-gradient-to-r from-primary to-secondary p-3 rounded-xl">
-                  <GraduationCap className="h-8 w-8 text-white" />
-                </div>
+                <img
+                  src="/logos/pmc-logo.jpg"
+                  alt="PMC Tech Logo"
+                  className="h-14 w-auto object-contain"
+                />
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">Seminar Hall Booking</h1>
                   <p className="text-sm text-gray-500">Smart Campus System</p>
@@ -99,7 +101,9 @@ const Dashboard = () => {
 
             {/* Right Side - Notifications and User */}
             <div className="flex flex-wrap items-center gap-2">
-              <NotificationCenter />
+              <div className="transition-transform duration-200 hover:scale-105">
+                <NotificationCenter />
+              </div>
               
               {/* User Info */}
               <div className="flex items-center space-x-3">
@@ -107,7 +111,7 @@ const Dashboard = () => {
                   <p className="text-base font-semibold text-gray-900">{profile.name}</p>
                   <p className="text-xs text-gray-500">{getRoleDisplayName(profile.role)}</p>
                 </div>
-                <div className="bg-gradient-to-r from-primary to-secondary p-2.5 rounded-full">
+                <div className="bg-gradient-to-r from-primary to-secondary p-2.5 rounded-full transition-transform duration-200 hover:scale-105">
                   {getRoleIcon(profile.role)}
                 </div>
                 <Button 
