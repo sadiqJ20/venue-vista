@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 import { Calendar, Clock, MapPin, Users, Plus, BookOpen, Bell, BellRing, LogOut, Search, AlertCircle } from "lucide-react";
 import BookingForm from "@/components/BookingForm";
 import BookingCard from "@/components/BookingCard";
@@ -266,21 +268,9 @@ const FacultyDashboard = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredHalls.map((hall, idx) => (
-                  <Card key={hall.id} className={`shadow-card border border-border rounded-card bg-card hover:shadow-card-hover transition-all duration-200 ${!hall.isAvailable ? 'opacity-60' : ''}`}>
+                  <Card key={hall.id} className={`shadow-card border border-border rounded-2xl bg-gradient-card hover-elevate transition-all duration-200 ${!hall.isAvailable ? 'opacity-60' : ''}`}>
                     <CardHeader>
                       <div className="flex items-center gap-4">
-                        {(() => {
-                          const src = pickImageForHall(hall, idx) || (customImages.length ? customImages[idx % customImages.length] : randomImageForHall(hall, 128, 128));
-                          return (
-                            <img
-                              src={src}
-                              alt={hall.name}
-                              className="h-12 w-12 rounded object-cover border border-border cursor-pointer"
-                              onClick={() => toggleExpandedImage(hall, idx)}
-                              onError={(e) => { e.currentTarget.src = randomImageForHall(hall, 128, 128); }}
-                            />
-                          );
-                        })()}
                         <div className="min-w-0 flex-1">
                           <CardTitle className="flex items-center gap-2 text-gray-900">
                             <MapPin className="h-5 w-5 text-primary" />
@@ -315,12 +305,42 @@ const FacultyDashboard = () => {
                         </div>
                       )}
 
-                      <div className="flex flex-wrap gap-2">
-                        {hall.has_ac && <Badge className="bg-secondary/10 text-secondary border-secondary/20">AC</Badge>}
-                        {hall.has_mic && <Badge className="bg-secondary/10 text-secondary border-secondary/20">Mic</Badge>}
-                        {hall.has_projector && <Badge className="bg-secondary/10 text-secondary border-secondary/20">Projector</Badge>}
-                        {hall.has_audio_system && <Badge className="bg-secondary/10 text-secondary border-secondary/20">Audio System</Badge>}
-                      </div>
+                      <TooltipProvider>
+                        <div className="flex flex-wrap gap-2">
+                          {hall.has_ac && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge className="bg-secondary/10 text-secondary border-secondary/20">AC</Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>Air Conditioning available</TooltipContent>
+                            </Tooltip>
+                          )}
+                          {hall.has_mic && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge className="bg-secondary/10 text-secondary border-secondary/20">Mic</Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>Microphone available</TooltipContent>
+                            </Tooltip>
+                          )}
+                          {hall.has_projector && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge className="bg-secondary/10 text-secondary border-secondary/20">Projector</Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>Projector available</TooltipContent>
+                            </Tooltip>
+                          )}
+                          {hall.has_audio_system && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge className="bg-secondary/10 text-secondary border-secondary/20">Audio System</Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>Audio system available</TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
+                      </TooltipProvider>
 
                       <Button
                         onClick={() => handleBookHall(hall)}
@@ -329,6 +349,13 @@ const FacultyDashboard = () => {
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         {hall.isAvailable ? "Book Hall" : "Currently Booked"}
+                      </Button>
+
+                      <Button
+                        onClick={() => toggleExpandedImage(hall, idx)}
+                        className="w-full bg-white text-primary border border-primary hover:bg-primary hover:text-white shadow-button hover:shadow-button-hover rounded-button transition-all duration-200"
+                      >
+                        View Photo
                       </Button>
                     </CardContent>
                   </Card>
@@ -425,18 +452,20 @@ const FacultyDashboard = () => {
         )}
 
         {expandedHallId && expandedImageUrl && (
-          <div className="fixed inset-x-0 top-20 z-50 px-4">
-            <div className="mx-auto max-w-5xl bg-white/95 backdrop-blur border border-border rounded-card shadow-card p-2">
+          <div
+            className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-24"
+            onClick={() => { setExpandedHallId(null); setExpandedImageUrl(""); }}
+          >
+            <div
+              className="mx-auto max-w-5xl bg-white/95 backdrop-blur border border-border rounded-card shadow-card p-2 cursor-pointer"
+              role="button"
+              aria-label="Close photo"
+            >
               <img
                 src={expandedImageUrl}
                 alt="Hall image"
                 className="w-full h-[360px] md:h-[440px] object-cover rounded"
               />
-              <div className="flex justify-end pt-2">
-                <Button variant="ghost" size="sm" onClick={() => { setExpandedHallId(null); setExpandedImageUrl(""); }}>
-                  Close
-                </Button>
-              </div>
             </div>
           </div>
         )}
