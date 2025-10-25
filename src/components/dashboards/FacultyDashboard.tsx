@@ -268,18 +268,13 @@ const FacultyDashboard = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredHalls.map((hall, idx) => (
-                  <Card key={hall.id} className={`shadow-card border border-border rounded-2xl bg-gradient-card hover-elevate transition-all duration-200 ${!hall.isAvailable ? 'opacity-60' : ''}`}>
+                  <Card key={hall.id} className="shadow-card border border-border rounded-2xl bg-gradient-card hover-elevate transition-all duration-200">
                     <CardHeader>
                       <div className="flex items-center gap-4">
                         <div className="min-w-0 flex-1">
                           <CardTitle className="flex items-center gap-2 text-gray-900">
                             <MapPin className="h-5 w-5 text-primary" />
                             <span className="whitespace-normal break-words">{hall.name}</span>
-                            {!hall.isAvailable && (
-                              <Badge className="ml-auto bg-red-500 text-white">
-                                Booked
-                              </Badge>
-                            )}
                           </CardTitle>
                           <CardDescription className="text-gray-600">
                             {hall.block} • {hall.type}
@@ -291,21 +286,7 @@ const FacultyDashboard = () => {
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Users className="h-4 w-4" />
                         Capacity: {hall.capacity} people
-                      </div>
-
-                      {!hall.isAvailable && hall.currentBooking && (
-                        <div className="p-2 bg-red-50 rounded border border-red-200">
-                          <div className="flex items-center gap-2 text-sm text-red-600">
-                            <AlertCircle className="h-4 w-4" />
-                            <span>Booked until {hall.bookedUntil}</span>
-                          </div>
-                          <p className="text-xs text-gray-600 mt-1">
-                            {hall.currentBooking.event_name} by {hall.currentBooking.faculty_name}
-                          </p>
-                        </div>
-                      )}
-
-                      <TooltipProvider>
+                      </div>                      <TooltipProvider>
                         <div className="flex flex-wrap gap-2">
                           {hall.has_ac && (
                             <Tooltip>
@@ -345,10 +326,9 @@ const FacultyDashboard = () => {
                       <Button
                         onClick={() => handleBookHall(hall)}
                         className="w-full bg-primary hover:bg-primary-hover text-white shadow-button hover:shadow-button-hover rounded-button transition-all duration-200"
-                        disabled={!hall.isAvailable}
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        {hall.isAvailable ? "Book Hall" : "Currently Booked"}
+                        Book Hall
                       </Button>
 
                       <Button
