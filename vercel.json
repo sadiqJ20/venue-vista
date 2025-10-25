@@ -9,23 +9,7 @@
       }
     }
   ],
-  "routes": [
-    {
-      "src": "/assets/(.*)",
-      "headers": { "cache-control": "public, max-age=31536000, immutable" },
-      "continue": true
-    },
-    {
-      "src": "/favicon.ico",
-      "headers": { "cache-control": "public, max-age=3600" }
-    },
-    {
-      "src": "/manifest.json",
-      "headers": { "cache-control": "public, max-age=3600" }
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
