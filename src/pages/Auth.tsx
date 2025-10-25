@@ -220,7 +220,13 @@ const Auth = () => {
     <div className="min-h-screen flex flex-col relative">
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: "url('/images/pmc-bg.webp')", backgroundAttachment: 'fixed' }}
+        style={{
+          backgroundImage: "url('/images/pmc-bg.webp')",
+          backgroundAttachment: 'fixed',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
       >
         <div className="absolute inset-0 bg-white/40 backdrop-blur-sm"></div>
       </div>

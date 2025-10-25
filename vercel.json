@@ -17,8 +17,13 @@
       "dest": "/assets/$1"
     },
     {
-      "src": "^/(.*)\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$",
-      "headers": { "cache-control": "public, max-age=31536000" },
+      "src": "^/(.*)\\.(jpg|jpeg|png|gif|ico|svg|webp|avif|woff|woff2|ttf|eot)$",
+      "headers": { "cache-control": "public, max-age=31536000, immutable" },
+      "dest": "/$1.$2"
+    },
+    {
+      "src": "^/(.*)\\.(js|css)$",
+      "headers": { "cache-control": "public, max-age=31536000, immutable" },
       "dest": "/$1.$2"
     },
     {
