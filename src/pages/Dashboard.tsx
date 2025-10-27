@@ -83,23 +83,23 @@ const Dashboard = () => {
       {/* Top Navigation Bar */}
       <nav className="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-32">
-            {/* Logo and Brand */}
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-3">
-                <img
-                  src="/logos/pmc-logo.jpg"
-                  alt="PMC Tech Logo"
-                  className="h-14 w-auto object-contain"
-                />
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Seminar Hall Booking</h1>
-                  <p className="text-sm text-gray-500">Smart Campus System</p>
-                </div>
-              </div>
+          <div className="relative flex justify-between items-center h-32">
+            {/* Left: Logo */}
+            <div className="flex items-center">
+              <img
+                src="/logos/pmc-logo.jpg"
+                alt="PMC Tech Logo"
+                className="h-14 w-auto object-contain"
+              />
             </div>
 
-            {/* Right Side - Notifications and User */}
+            {/* Center: Title */}
+            <div className="absolute left-1/2 -translate-x-1/2 text-center">
+              <h1 className="text-2xl font-bold text-gray-900">Seminar Hall Booking</h1>
+              <p className="text-sm text-gray-500">Smart Campus System</p>
+            </div>
+
+            {/* Right: Notifications and User */}
             <div className="flex flex-wrap items-center gap-2">
               <div className="transition-transform duration-200 hover:scale-105">
                 <NotificationCenter />

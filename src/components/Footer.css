@@ -54,6 +54,103 @@
   animation: backdropFadeIn 0.3s ease-out;
 }
 
+/* Names ticker */
+
+.ticker {
+  position: relative;
+  overflow: hidden;
+  height: 100px;
+  line-height: 100px;
+}
+
+/* Static label on the left */
+.ticker__label {
+  padding: 0 0.75rem 0 1rem;
+  font-weight: 800;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+/* Viewport ensures only 4 items are visible */
+.ticker__viewport {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Track continuously scrolls */
+.ticker__track {
+  display: flex;
+  align-items: center;
+  will-change: transform;
+  animation: ticker-scroll 26s linear infinite;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+.ticker__set {
+  display: flex;
+  width: 100%;
+}
+
+/* Exactly four columns visible at any time (default static layout) */
+.ticker__item {
+  flex: 0 0 25%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.5rem;
+  font-weight: 700;
+  color: #0f172a; /* primary/dark text */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Visible separator with spacing */
+.ticker__sep { 
+  display: inline-block; 
+  margin-left: 0.75rem; 
+  margin-right: 0.25rem; 
+  opacity: 0.5; 
+}
+
+/* Looping variant: items shrink to content and scroll; add explicit gap equal to ~2 tabs */
+.ticker--loop .ticker__item { flex: 0 0 auto; padding: 0 1rem; }
+.ticker--loop .ticker__sep { margin: 0 0.75rem; opacity: 0.45; display: none; }
+.ticker--loop .ticker__set { width: auto; }
+.ticker--loop .ticker__gap { display: block; width: 32ch; flex: 0 0 32ch; }
+.ticker--loop .ticker__track { animation: ticker-scroll 26s linear infinite; backface-visibility: hidden; transform: translateZ(0); }
+
+@keyframes ticker-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Card-like appearance for names */
+.ticker__item--card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88px;
+  padding: 0 1.25rem;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f3f4f6 0%, #e5e7eb 100%);
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+  color: #0f172a;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ticker--loop .ticker__item--card { margin: 0 0.75rem; min-width: 240px; }
+
+/* Static variant: width fits content and no animation */
+.ticker--static { width: fit-content; }
+.ticker--static .ticker__viewport { width: auto; }
+.ticker--static .ticker__track { animation: none; }
+.ticker--static .ticker__item { flex: 0 0 auto; }
+
 /* Enhanced Hover Effects */
 .team-card:hover {
   transform: translateY(-8px) scale(1.02);
