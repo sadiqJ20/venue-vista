@@ -268,7 +268,7 @@ const FacultyDashboard = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredHalls.map((hall, idx) => (
-                  <Card key={hall.id} className="shadow-card border border-border rounded-2xl bg-gradient-card hover-elevate transition-all duration-200">
+                  <Card key={hall.id} className={`${expandedHallId === hall.id ? 'ring-2 ring-primary' : ''} shadow-card border border-border rounded-2xl bg-gradient-card hover-elevate transition-all duration-200`}>
                     <CardHeader>
                       <div className="flex items-center gap-4">
                         <div className="min-w-0 flex-1">
@@ -433,18 +433,18 @@ const FacultyDashboard = () => {
 
         {expandedHallId && expandedImageUrl && (
           <div
-            className="fixed inset-0 z-50 flex items-start justify-center px-4 pt-24"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
             onClick={() => { setExpandedHallId(null); setExpandedImageUrl(""); }}
           >
             <div
-              className="mx-auto max-w-5xl bg-white/95 backdrop-blur border border-border rounded-card shadow-card p-2 cursor-pointer"
+              className="mx-auto cursor-pointer"
               role="button"
               aria-label="Close photo"
             >
               <img
                 src={expandedImageUrl}
                 alt="Hall image"
-                className="w-full h-[360px] md:h-[440px] object-cover rounded"
+                className="max-h-[90vh] max-w-[90vw] object-contain rounded-lg ring-2 ring-white/70"
               />
             </div>
           </div>

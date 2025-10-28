@@ -12,4 +12,48 @@
 
 @layer components {
   .hover-elevate { @apply transition duration-200 ease-out hover:shadow-card-hover hover:scale-[1.01]; }
+
+  /* Subtle animated running light border */
+  .shimmer-border {
+    position: relative;
+    border-radius: inherit;
+    overflow: hidden; /* keep glow inside rounded corners */
+  }
+  .shimmer-border::before {
+    content: "";
+    position: absolute;
+    inset: 0; /* draw inside container */
+    padding: 1px;
+    border-radius: inherit;
+    background: conic-gradient(from 0deg, rgba(30,58,138,0.0), rgba(30,58,138,0.35), rgba(15,23,42,0.0) 60%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    animation: shimmer-rotate 4s linear infinite;
+    pointer-events: none;
+  }
+  .shimmer-light::before { opacity: 0.75; filter: blur(0.2px); }
+  .shimmer-muted::before { opacity: 0.45; }
+
+  /* Blue running light variant (thin, bright sweep) */
+  .shimmer-blue::before {
+    opacity: 0.9;
+    filter: blur(0.3px);
+    padding: 1.5px; /* slightly thicker line */
+    background:
+      conic-gradient(
+        from 0deg,
+        rgba(59,130,246,0) 0deg,
+        rgba(59,130,246,0) 300deg,
+        rgba(59,130,246,0.15) 310deg,
+        rgba(59,130,246,0.95) 325deg,
+        rgba(59,130,246,0.15) 340deg,
+        rgba(59,130,246,0) 360deg
+      );
+  }
+
+  @keyframes shimmer-rotate {
+    to { transform: rotate(360deg); }
+  }
 }

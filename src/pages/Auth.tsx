@@ -245,7 +245,7 @@ const Auth = () => {
           </div>
 
           <div className="w-full max-w-2xl md:max-w-none md:ml-0 md:-translate-x-4 lg:-translate-x-6 transition-transform">
-            <Card className="shadow-card border border-border rounded-card bg-card/95 backdrop-blur-sm">
+            <Card className="shadow-card border border-border rounded-card bg-card/95 backdrop-blur-sm shimmer-border shimmer-blue">
               <CardHeader>
                 <CardTitle className="text-2xl text-center">Welcome</CardTitle>
                 <CardDescription className="text-center">
@@ -254,7 +254,7 @@ const Auth = () => {
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="signin" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200 rounded-lg">
+                  <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200 rounded-card">
                     <TabsTrigger value="signin" className="data-[state=active]:bg-primary data-[state=active]:text-white">Sign In</TabsTrigger>
                     <TabsTrigger value="signup" className="data-[state=active]:bg-primary data-[state=active]:text-white">Sign Up</TabsTrigger>
                   </TabsList>

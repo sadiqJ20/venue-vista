@@ -9,6 +9,14 @@ const Footer = () => {
   const [isTeamVisible, setIsTeamVisible] = useState(false);
   const [contactEmail, setContactEmail] = useState("");
 
+  // Ticker names to display in a subtle running strip
+  const tickerPeople = [
+    { name: "Dr . A .SENTHIL KUMAR", title: "(Principal)" },
+    { name: "Dr . P .RAVICHANDRAN", title: "(Executive Dean & International affairs)" },
+    { name: "Dr . C . SATHISH", title: "( Head of the  department  Information technology )" },
+    { name: "Mrs . S . SURYA", title: "(Assistant professor Information technology)" },
+  ];
+
   const teamMembers = [
     {
       id: 1,
@@ -154,13 +162,44 @@ const Footer = () => {
               </div>
             </div>
 
-            {/* Team Cards Grid */}
+            
+
+            {/* Body Container */}
             <div className="bg-white/80 backdrop-blur p-6 rounded-b-2xl shadow-lg">
+              {/* Advisors section (moved above) */}
+              <div className="mt-2 flex justify-center">
+                <div className="ticker ticker--loop inline-flex items-center">
+                  <span className="ticker__label">ADVISORS -</span>
+                  <div className="ticker__viewport">
+                    <div className="ticker__track">
+                      {Array.from({ length: 2 }).map((_, loopIdx) => (
+                        <span key={loopIdx} className="ticker__set">
+                          {tickerPeople.map((person, idx) => (
+                            <span key={`${loopIdx}-${idx}`} className="ticker__item ticker__item--card">
+                              <span className="flex flex-col leading-tight">
+                                <span>{person.name}</span>
+                                <span className="text-xs text-gray-600">{person.title}</span>
+                              </span>
+                              <span className="ticker__sep" aria-hidden>|</span>
+                            </span>
+                          ))}
+                          <span className="ticker__gap" aria-hidden></span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="my-6 h-1 rounded-full bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
+
+              {/* Team Cards Grid (placed below divider) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
                 {teamMembers.map((member, index) => (
                   <div
                     key={member.id}
-                    className="team-card rounded-2xl p-6 transition-all duration-300 transform bg-gradient-to-br from-indigo-50/80 to-slate-100/80 border border-white/60 shadow-card hover:shadow-card-hover hover:scale-[1.02] hover:ring-2 hover:ring-indigo-200/60"
+                    className="team-card rounded-2xl p-6 transition-all duration-300 transform bg-gradient-to-br from-indigo-50/80 to-slate-100/80 border border-white/60 shadow-card hover:shadow-card-hover hover:scale-[1.02] hover:ring-2 hover:ring-indigo-200/60 shimmer-border shimmer-blue"
                     style={{
                       animationDelay: `${index * 100}ms`,
                       animation: 'slideInUp 0.5s ease-out forwards'
@@ -233,6 +272,8 @@ const Footer = () => {
                   </div>
                 ))}
               </div>
+
+              {/* Advisors were moved above and renamed */}
 
               {/* Contact / Subscribe Section */}
               <div className="mt-10 rounded-2xl p-6 bg-gradient-to-r from-indigo-50 to-slate-100">
