@@ -24,6 +24,7 @@ interface Booking {
   event_name: string;
   description?: string;
   department: string;
+  hod_id?: string;
   hod_name: string;
   event_date: string;
   start_time: string;
@@ -47,12 +48,48 @@ interface BookingCardProps {
 }
 
 const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }: BookingCardProps) => {
-  const { profile } = useAuth();
+  const [hodName, setHodName] = useState<string>('');
   const { toast } = useToast();
+  const { profile } = useAuth();
   const { notifyPrincipalApproval, notifyPROApproval, notifyFacultyFinalApproval, notifyFacultyRejection } = useEmailNotifications();
   const [loading, setLoading] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+
+  // Safely get HOD name with fallback
+  useEffect(() => {
+    const getHodName = async () => {
+      // If we have a direct HOD name, use it
+      if (booking?.hod_name) {
+        setHodName(booking.hod_name);
+        return;
+      }
+      
+      // If we have a HOD ID but no name, try to fetch it
+      if (booking?.hod_id) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('name')
+            .eq('id', booking.hod_id)
+            .single();
+
+          if (!error && data?.name) {
+            setHodName(data.name);
+          } else {
+            setHodName('Not available');
+          }
+        } catch (error) {
+          console.error('Error fetching HOD name:', error);
+          setHodName('Not available');
+        }
+      } else {
+        setHodName('Not available');
+      }
+    };
+
+    getHodName();
+  }, [booking?.hod_id, booking?.hod_name]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -339,50 +376,174 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
               View Details
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Booking Details</DialogTitle>
+          <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
+            <DialogHeader className="px-1">
+              <div className="flex flex-col space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <DialogTitle className="text-2xl font-bold text-foreground">Booking Details</DialogTitle>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Badge className={`${getStatusColor(booking.status)} text-white`}>
+                      {getStatusText(booking.status)}
+                    </Badge>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="text-xs sm:text-sm">ID: {booking.id}</span>
+                  </div>
+                </div>
+                <div className="h-px bg-border w-full" />
+              </div>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="font-medium">Institution Type</p>
-                  <p className="text-sm text-muted-foreground">{booking.institution_type}</p>
+
+            <div className="space-y-6 py-2 px-1">
+              {/* Institution & Event Details */}
+              <section className="space-y-3">
+                <h3 className="text-lg font-semibold text-foreground/90 pb-1 border-b border-border">Institution & Event Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Institution Type</p>
+                    <p className="text-base font-medium">{booking.institution_type}</p>
+                  </div>
+                  <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Event Name</p>
+                    <p className="text-base font-medium">{booking.event_name}</p>
+                  </div>
+                  {booking.description && (
+                    <div className="md:col-span-2 bg-muted/30 p-4 rounded-lg border border-border">
+                      <p className="text-sm font-medium text-muted-foreground mb-2">Event Description</p>
+                      <p className="text-base whitespace-pre-wrap">{booking.description}</p>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <p className="font-medium">Guest Lectures</p>
-                  <p className="text-sm text-muted-foreground">{booking.guest_lectures_count}</p>
+              </section>
+
+              {/* Contact Information */}
+              <section className="space-y-3">
+                <h3 className="text-lg font-semibold text-foreground/90 pb-1 border-b border-border">Contact Information</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Organizer Name</p>
+                    <p className="text-base">{booking.organizer_name}</p>
+                  </div>
+                  <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Faculty Name</p>
+                    <p className="text-base">{booking.faculty_name}</p>
+                  </div>
+                  <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Faculty Phone</p>
+                    <p className="text-base">{booking.faculty_phone || 'Not provided'}</p>
+                  </div>
+                  <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">HOD Name</p>
+                    <p className="text-base">
+                      {hodName}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">Faculty Phone</p>
-                  <p className="text-sm text-muted-foreground">{booking.faculty_phone || '-'}</p>
+              </section>
+
+              {/* Event Schedule */}
+              <section className="space-y-3">
+                <h3 className="text-lg font-semibold text-foreground/90 pb-1 border-b border-border">Event Schedule</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Event Date</p>
+                    <p className="text-base">
+                      {new Date(booking.event_date).toLocaleDateString('en-US', { 
+                        weekday: 'long', 
+                        year: 'numeric', 
+                        month: 'long', 
+                        day: 'numeric' 
+                      })}
+                    </p>
+                  </div>
+                  <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Start Time</p>
+                    <p className="text-base">{booking.start_time}</p>
+                  </div>
+                  <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">End Time</p>
+                    <p className="text-base">{booking.end_time}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">Organizer</p>
-                  <p className="text-sm text-muted-foreground">{booking.organizer_name}</p>
+              </section>
+
+              {/* Additional Information */}
+              <section className="space-y-3">
+                <h3 className="text-lg font-semibold text-foreground/90 pb-1 border-b border-border">Additional Information</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Number of Attendees</p>
+                    <p className="text-base">{booking.attendees_count}</p>
+                  </div>
+                  <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Department</p>
+                    <p className="text-base">{booking.department}</p>
+                  </div>
+                  {booking.guest_lectures_count > 0 && (
+                    <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Guest Lectures</p>
+                      <p className="text-base">{booking.guest_lectures_count}</p>
+                    </div>
+                  )}
+                  {booking.guest_lecture_names && (
+                    <div className="sm:col-span-2 bg-muted/30 p-4 rounded-lg border border-border">
+                      <p className="text-sm font-medium text-muted-foreground mb-2">Guest Lecturers</p>
+                      <div className="bg-background/50 p-3 rounded-md">
+                        <p className="text-base whitespace-pre-wrap break-words">{booking.guest_lecture_names}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-              {booking.description && (
-                <div>
-                  <p className="font-medium">Description</p>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{booking.description}</p>
-                </div>
+              </section>
+
+              {/* Equipment Requirements */}
+              {(booking.required_ac || booking.required_mic || booking.required_projector || booking.required_audio_system) && (
+                <section className="space-y-3">
+                  <h3 className="text-lg font-semibold text-foreground/90 pb-1 border-b border-border">Equipment Requirements</h3>
+                  <div className="flex flex-wrap gap-2 bg-muted/30 p-4 rounded-lg border border-border">
+                    {booking.required_ac && <Badge variant="outline" className="text-sm bg-background">Air Conditioning</Badge>}
+                    {booking.required_mic && <Badge variant="outline" className="text-sm bg-background">Microphone</Badge>}
+                    {booking.required_projector && <Badge variant="outline" className="text-sm bg-background">Projector</Badge>}
+                    {booking.required_audio_system && <Badge variant="outline" className="text-sm bg-background">Audio System</Badge>}
+                  </div>
+                </section>
               )}
-              {booking.guest_lecture_names && (
-                <div>
-                  <p className="font-medium">Guest Lecturers</p>
-                  <p className="text-sm text-muted-foreground">{booking.guest_lecture_names}</p>
-                </div>
+
+              {/* Hall Information */}
+              {booking.halls && (
+                <section className="space-y-3">
+                  <h3 className="text-lg font-semibold text-foreground/90 pb-1 border-b border-border">Venue Details</h3>
+                  <div className="bg-muted/30 p-4 rounded-lg border border-border">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Hall Name</p>
+                        <p className="text-base">{booking.halls.name}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Block</p>
+                        <p className="text-base">{booking.halls.block}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Capacity</p>
+                        <p className="text-base">{booking.halls.capacity} people</p>
+                      </div>
+                    </div>
+                    <div className="mt-3">
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Hall Type</p>
+                      <p className="text-base capitalize">{booking.halls.type.toLowerCase()}</p>
+                    </div>
+                  </div>
+                </section>
               )}
-              <div>
-                <p className="font-medium">HOD Name</p>
-                <p className="text-sm text-muted-foreground">{booking.hod_name}</p>
-              </div>
-              <div>
-                <p className="font-medium">Requested Date</p>
-                <p className="text-sm text-muted-foreground">
-                  {new Date(booking.created_at).toLocaleString()}
-                </p>
+
+              {/* Metadata */}
+              <div className="pt-2 text-xs text-muted-foreground border-t border-border mt-6">
+                <p>Booking created on {new Date(booking.created_at).toLocaleString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}</p>
               </div>
             </div>
           </DialogContent>

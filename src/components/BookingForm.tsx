@@ -216,7 +216,9 @@ const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
                 event_name: formData.eventName.trim(),
                 description: formData.description.trim(),
                 department: profile.department!,
-                hod_name: 'Auto-filled HOD',
+                // Set HOD information from profile
+                hod_id: profile.hod_id,  // Store HOD ID if available
+                hod_name: profile.hod_name || 'Not available',  // Use HOD name or fallback
                 event_date: formData.eventDate,
                 start_time: formData.startTime,
                 end_time: formData.endTime,
