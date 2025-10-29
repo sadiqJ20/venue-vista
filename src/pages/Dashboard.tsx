@@ -6,7 +6,7 @@ import HODDashboard from "@/components/dashboards/HODDashboard";
 import PrincipalDashboard from "@/components/dashboards/PrincipalDashboard";
 import PRODashboard from "@/components/dashboards/PRODashboard";
 import ChairmanDashboard from "@/components/dashboards/ChairmanDashboard";
-import { Loader2, GraduationCap, LogOut, Bell, Home, Calendar, MapPin, User, Settings, Shield } from "lucide-react";
+import { Loader2, GraduationCap, LogOut, Bell, Home, Calendar, MapPin, User, Settings, Shield, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,66 +17,117 @@ const Dashboard = () => {
   const { user, profile, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [authState, setAuthState] = useState<{
+    status: 'checking' | 'authenticated' | 'unauthenticated' | 'error';
+    message?: string;
+  }>({ status: 'checking' });
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Get user from localStorage as fallback
-        const storedUser = localStorage.getItem('sb-auth');
+        console.log('Dashboard: Checking authentication status...');
         
-        if (!storedUser && !user) {
+        // If we're still loading auth state, wait
+        if (loading) {
+          console.log('Dashboard: Auth is still loading...');
+          return;
+        }
+
+        // No user and not loading means not authenticated
+        if (!user) {
+          console.log('Dashboard: No user found, redirecting to login');
+          setAuthState({ 
+            status: 'unauthenticated',
+            message: 'Please log in to continue' 
+          });
           navigate('/auth');
           return;
         }
 
-        // If we have a user but no profile yet, wait for it to load
-        if (user && !profile) {
+        // We have a user but no profile yet
+        if (!profile) {
+          console.log('Dashboard: User found but profile is loading...');
           return;
         }
 
-        // If we have both user and profile, we're good to go
-        if (user && profile) {
-          // Verify role if needed
-          if (profile.role !== 'hod') {
-            console.log('User is not authorized to access HOD dashboard');
-            navigate('/auth');
-            return;
-          }
+        // Verify user role
+        const validRoles = ['faculty', 'hod', 'principal', 'pro', 'chairman'];
+        if (!validRoles.includes(profile.role)) {
+          console.log(`Dashboard: Unauthorized role: ${profile.role}`);
+          setAuthState({ 
+            status: 'unauthenticated',
+            message: 'You do not have permission to access this page' 
+          });
+          navigate('/auth');
+          return;
         }
+
+        console.log(`Dashboard: User authenticated as ${profile.role}`);
+        setAuthState({ status: 'authenticated' });
+        
       } catch (error) {
-        console.error('Authentication check failed:', error);
-        navigate('/auth');
-      } finally {
-        setIsCheckingAuth(false);
+        console.error('Dashboard: Authentication check failed:', error);
+        setAuthState({ 
+          status: 'error',
+          message: 'An error occurred while checking authentication' 
+        });
       }
     };
 
     checkAuth();
-  }, [user, profile, navigate]);
+  }, [user, profile, loading, navigate]);
 
   // Show loading state
-  if (loading || isCheckingAuth) {
+  if (loading || authState.status === 'checking') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+        <div className="text-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
           <p className="text-gray-600">Loading your dashboard...</p>
+          <p className="text-sm text-gray-500">Please wait while we verify your session</p>
         </div>
       </div>
     );
   }
 
-  // If no user or profile after loading, show unauthorized
-  if (!user || !profile) {
+  // Handle error state
+  if (authState.status === 'error') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Access Denied</h2>
-          <p className="text-gray-600 mb-4">You need to be logged in to view this page.</p>
-          <Button onClick={() => navigate('/auth')}>
-            Go to Login
-          </Button>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="text-center space-y-4 max-w-md">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto" />
+          <h2 className="text-xl font-semibold text-gray-800">Something went wrong</h2>
+          <p className="text-gray-600">
+            {authState.message || 'An unexpected error occurred while loading the dashboard.'}
+          </p>
+          <div className="flex justify-center gap-4 pt-4">
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+            <Button onClick={() => signOut()}>
+              Log Out
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle unauthenticated state
+  if (authState.status === 'unauthenticated' || !user || !profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+        <div className="text-center space-y-4">
+          <Shield className="h-12 w-12 text-yellow-500 mx-auto" />
+          <h2 className="text-xl font-semibold text-gray-800">Access Required</h2>
+          <p className="text-gray-600">
+            {authState.message || 'You need to be logged in to view this page.'}
+          </p>
+          <div className="pt-4">
+            <Button onClick={() => navigate('/auth')}>
+              Go to Login
+            </Button>
+          </div>
         </div>
       </div>
     );

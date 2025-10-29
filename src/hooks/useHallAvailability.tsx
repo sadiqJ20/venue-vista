@@ -28,27 +28,43 @@ interface HallAvailability extends Hall {
 export const useHallAvailability = () => {
   const [halls, setHalls] = useState<HallAvailability[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   const fetchHallsWithAvailability = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
+      console.log('Fetching halls...');
       // Get all halls
       const { data: hallsData, error: hallsError } = await supabase
         .from('halls')
         .select('*')
         .order('block', { ascending: true });
 
-      if (hallsError) throw hallsError;
+      if (hallsError) {
+        console.error('Error fetching halls:', hallsError);
+        throw hallsError;
+      }
+
+      console.log(`Fetched ${hallsData?.length || 0} halls`);
 
       // Get all active bookings for today and future dates
       const today = new Date().toISOString().split('T')[0];
+      console.log('Fetching bookings from:', today);
+      
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
         .select('hall_id, event_name, faculty_name, event_date, start_time, end_time, status')
         .gte('event_date', today)
         .in('status', ['approved', 'pending_hod', 'pending_principal', 'pending_pro']);
 
-      if (bookingsError) throw bookingsError;
+      if (bookingsError) {
+        console.error('Error fetching bookings:', bookingsError);
+        throw bookingsError;
+      }
+      
+      console.log(`Fetched ${bookingsData?.length || 0} active bookings`);
 
       // Debug: Log all bookings to understand what we're working with
       console.log('All bookings fetched (cross-faculty):', bookingsData);
@@ -142,7 +158,7 @@ export const useHallAvailability = () => {
     excludeBookingId?: string
   ): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.rpc('is_hall_available', {
+      const { data, error } = await supabase.rpc('get_available_halls', {
         hall_id_param: hallId,
         event_date_param: eventDate,
         start_time_param: startTime,
@@ -150,8 +166,17 @@ export const useHallAvailability = () => {
         exclude_booking_id: excludeBookingId || null
       });
 
-      if (error) throw error;
-      return data as boolean;
+      if (error) {
+        console.error('Error checking hall availability:', error);
+        return false;
+      }
+      
+      // If we got data back, check if the hall is in the available halls list
+      if (Array.isArray(data)) {
+        return data.some((hall: { id: string }) => hall.id === hallId);
+      }
+      
+      return false;
     } catch (error) {
       console.error('Error checking hall availability:', error);
       return false;
