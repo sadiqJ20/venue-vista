@@ -33,10 +33,14 @@ export async function sendBookingNotification(
         const { data } = await supabase.from("profiles").select("email").eq("role", "principal").maybeSingle();
         recipientEmail = data?.email || "";
       } else if (actionBy === "Principal") {
-        const { data } = await supabase.from("profiles").select("email").eq("role", "pro").maybeSingle();
-        recipientEmail = data?.email || "";
+        // Principal is now final approver → notify faculty
+        recipientEmail = booking.faculty_email || "";
+        if (!recipientEmail && booking.faculty_id) {
+          const { data } = await supabase.from("profiles").select("email").eq("id", booking.faculty_id).maybeSingle();
+          recipientEmail = data?.email || "";
+        }
       } else if (actionBy === "PRO") {
-        // Final approval → notify faculty (prefer email on booking to avoid RLS issues)
+        // Keep for backward compatibility
         recipientEmail = booking.faculty_email || "";
         if (!recipientEmail && booking.faculty_id) {
           const { data } = await supabase.from("profiles").select("email").eq("id", booking.faculty_id).maybeSingle();
@@ -113,6 +117,39 @@ export async function sendBookingNotification(
       comments: commentsText,
       action_url: "/dashboard",
     });
+
+    // If Principal approved, also notify PRO per updated workflow
+    if (status === "Approved" && actionBy === "Principal") {
+      const { data: proProfile } = await supabase
+        .from("profiles")
+        .select("email, name")
+        .eq("role", "pro")
+        .maybeSingle();
+
+      const proEmail = proProfile?.email || "";
+      if (proEmail) {
+        const proSubject = "Booking Request Update";
+        const proMessage = `Booking update for ${booking.event_name} (${booking.event_date} ${booking.start_time}-${booking.end_time})`;
+        await sendTestEmail({
+          recipientEmail: proEmail,
+          subject: proSubject,
+          message: proMessage,
+          recipientName: "PRO",
+          faculty_name: booking.faculty_name,
+          faculty_contact: booking.faculty_phone ?? "",
+          department: booking.department,
+          hall_name: booking.halls?.name ?? "",
+          event_name: booking.event_name,
+          event_date: booking.event_date,
+          start_time: booking.start_time,
+          end_time: booking.end_time,
+          decision: "Approved",
+          decision_taken_by: "Principal",
+          comments: "This booking has been approved by both HOD and Principal.",
+          action_url: "/dashboard",
+        });
+      }
+    }
 
     return true;
   } catch (e) {

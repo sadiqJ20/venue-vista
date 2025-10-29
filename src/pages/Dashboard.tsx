@@ -17,27 +17,46 @@ const Dashboard = () => {
   const { user, profile, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
-    let isMounted = true;
-
     const checkAuth = async () => {
-      // Only check auth state if we're not already loading
-      if (!loading) {
-        if (!user && isMounted) {
+      try {
+        // Get user from localStorage as fallback
+        const storedUser = localStorage.getItem('sb-auth');
+        
+        if (!storedUser && !user) {
           navigate('/auth');
+          return;
         }
+
+        // If we have a user but no profile yet, wait for it to load
+        if (user && !profile) {
+          return;
+        }
+
+        // If we have both user and profile, we're good to go
+        if (user && profile) {
+          // Verify role if needed
+          if (profile.role !== 'hod') {
+            console.log('User is not authorized to access HOD dashboard');
+            navigate('/auth');
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Authentication check failed:', error);
+        navigate('/auth');
+      } finally {
+        setIsCheckingAuth(false);
       }
     };
 
     checkAuth();
+  }, [user, profile, navigate]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [user, loading, navigate]);
-
-  if (loading) {
+  // Show loading state
+  if (loading || isCheckingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -48,8 +67,19 @@ const Dashboard = () => {
     );
   }
 
+  // If no user or profile after loading, show unauthorized
   if (!user || !profile) {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Access Denied</h2>
+          <p className="text-gray-600 mb-4">You need to be logged in to view this page.</p>
+          <Button onClick={() => navigate('/auth')}>
+            Go to Login
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const getRoleDisplayName = (role: string) => {

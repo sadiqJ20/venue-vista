@@ -31,7 +31,7 @@ const PRODashboard = () => {
             capacity
           )
         `)
-        .in('status', ['pending_pro', 'approved', 'rejected'])
+        .eq('status', 'approved') // PRO only sees approved bookings
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -47,26 +47,12 @@ const PRODashboard = () => {
     fetchBookings();
   }, []);
 
-  const pendingBookings = bookings.filter(b => b.status === 'pending_pro');
   const approvedBookings = bookings.filter(b => b.status === 'approved');
   const rejectedBookings = bookings.filter(b => b.status === 'rejected');
 
   return (
     <div className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Pending Final Approval</p>
-                  <p className="text-2xl font-bold">{pendingBookings.length}</p>
-                </div>
-                <div className="h-8 w-8 bg-purple-500/10 rounded-full flex items-center justify-center">
-                  <Briefcase className="h-4 w-4 text-purple-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -84,11 +70,11 @@ const PRODashboard = () => {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Rejected Bookings</p>
-                  <p className="text-2xl font-bold">{rejectedBookings.length}</p>
+                  <p className="text-sm font-medium text-muted-foreground">Total Bookings</p>
+                  <p className="text-2xl font-bold">{bookings.length}</p>
                 </div>
-                <div className="h-8 w-8 bg-red-500/10 rounded-full flex items-center justify-center">
-                  <Briefcase className="h-4 w-4 text-red-500" />
+                <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+                  <Briefcase className="h-4 w-4 text-primary" />
                 </div>
               </div>
             </CardContent>
@@ -99,47 +85,20 @@ const PRODashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Briefcase className="h-5 w-5" />
-              Final Approvals
+              Confirmed Bookings
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="pending" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 gap-2">
-                <TabsTrigger value="pending" className="relative border border-gray-300 rounded-md px-3 py-1.5 text-sm hover:bg-gray-50 data-[state=active]:bg-gray-100 data-[state=active]:border-gray-400">
-                  Pending Final Approval
-                  {pendingBookings.length > 0 && (
-                    <Badge className="ml-2 h-5 w-5 flex items-center justify-center p-0 text-xs">
-                      {pendingBookings.length}
-                    </Badge>
-                  )}
-                </TabsTrigger>
+            <Tabs defaultValue="approved" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 gap-2">
                 <TabsTrigger value="approved" className="border border-gray-300 rounded-md px-3 py-1.5 text-sm hover:bg-gray-50 data-[state=active]:bg-gray-100 data-[state=active]:border-gray-400">Confirmed Bookings</TabsTrigger>
-                <TabsTrigger value="rejected" className="border border-gray-300 rounded-md px-3 py-1.5 text-sm hover:bg-gray-50 data-[state=active]:bg-gray-100 data-[state=active]:border-gray-400">Rejected Bookings</TabsTrigger>
                 <TabsTrigger value="booked" className="border border-gray-300 rounded-md px-3 py-1.5 text-sm hover:bg-gray-50 data-[state=active]:bg-gray-100 data-[state=active]:border-gray-400">Booked Halls</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="pending" className="mt-6">
+              <TabsContent value="approved" className="mt-6">
                 {loading ? (
                   <p className="text-center text-muted-foreground py-8">Loading...</p>
-                ) : pendingBookings.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No pending final approvals</p>
-                ) : (
-                  <div className="space-y-4">
-                    {pendingBookings.map(booking => (
-                      <BookingCard
-                        key={booking.id}
-                        booking={booking}
-                        onStatusUpdate={fetchBookings}
-                        showActions={true}
-                        userRole="pro"
-                      />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="approved" className="mt-6">
-                {approvedBookings.length === 0 ? (
+                ) : approvedBookings.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">No confirmed bookings</p>
                 ) : (
                   <div className="space-y-4">
@@ -149,18 +108,7 @@ const PRODashboard = () => {
                   </div>
                 )}
               </TabsContent>
-
-              <TabsContent value="rejected" className="mt-6">
-                {rejectedBookings.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">No rejected bookings</p>
-                ) : (
-                  <div className="space-y-4">
-                    {rejectedBookings.map(booking => (
-                      <BookingCard key={booking.id} booking={booking} />
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
+              
               <TabsContent value="booked" className="mt-6">
                 {/* Render booked halls overview inside the same card body for PRO */}
                 <BookedHallsOverview />

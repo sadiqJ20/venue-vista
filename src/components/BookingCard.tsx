@@ -116,8 +116,8 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
   const getNextStatus = (currentStatus: string) => {
     switch (currentStatus) {
       case 'pending_hod': return 'pending_principal' as const;
-      case 'pending_principal': return 'pending_pro' as const;
-      case 'pending_pro': return 'approved' as const;
+      case 'pending_principal': return 'approved' as const; // Principal is now final approver
+      case 'pending_pro': return 'approved' as const; // Keep for backward compatibility
       default: return currentStatus as any;
     }
   };
@@ -255,7 +255,7 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
       case 'pending_principal':
         return userRole === 'principal';
       case 'pending_pro':
-        return userRole === 'pro';
+        return false; // PRO can no longer approve - Principal is final approver
       default:
         return false;
     }
