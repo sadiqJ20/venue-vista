@@ -19,9 +19,22 @@ const Dashboard = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth');
-    }
+    let isMounted = true;
+
+    const checkAuth = async () => {
+      // Only check auth state if we're not already loading
+      if (!loading) {
+        if (!user && isMounted) {
+          navigate('/auth');
+        }
+      }
+    };
+
+    checkAuth();
+
+    return () => {
+      isMounted = false;
+    };
   }, [user, loading, navigate]);
 
   if (loading) {
