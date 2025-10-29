@@ -41,7 +41,9 @@ const toTodayYMD = () => {
 const isTimeWithinWindow = (time: string) => time >= "08:00" && time <= "18:00";
 
 const BookingForm = ({ hall, onClose, onSuccess }: BookingFormProps) => {
-    const { profile } = useAuth();
+    // Safely use useAuth with a fallback
+const auth = useAuth();
+const profile = auth?.profile;
     const { toast } = useToast();
     const { checkHallAvailability, getHallAvailabilityStatus } = useHallAvailability();
     const { notifyHODNewBooking, emailStatus, setEmailStatus } = useEmailNotifications();

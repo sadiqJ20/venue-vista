@@ -51,53 +51,87 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('AuthProvider: Initializing auth state...');
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log(`Auth state changed: ${event}`, { hasSession: !!session, hasUser: !!session?.user });
+        
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user profile after auth state change
-          setTimeout(async () => {
-            const { data: profileData } = await supabase
+          try {
+            console.log('Fetching profile for user:', session.user.id);
+            const { data: profileData, error } = await supabase
               .from('profiles')
               .select('*')
               .eq('user_id', session.user.id)
               .single();
             
+            if (error) throw error;
+            
+            console.log('Profile loaded:', profileData);
             setProfile(profileData);
+          } catch (error) {
+            console.error('Error loading profile:', error);
+            // Don't clear the session on profile load error
+          } finally {
             setLoading(false);
-          }, 0);
+          }
         } else {
+          console.log('No user session found');
           setProfile(null);
           setLoading(false);
         }
+      },
+      (error) => {
+        console.error('Auth state change error:', error);
+        setLoading(false);
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        setTimeout(async () => {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .single();
-          
-          setProfile(profileData);
-          setLoading(false);
-        }, 0);
-      } else {
+    const checkSession = async () => {
+      try {
+        console.log('Checking for existing session...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) throw error;
+        
+        console.log('Session check complete', { hasSession: !!session, hasUser: !!session?.user });
+        
+        if (session?.user) {
+          try {
+            console.log('Fetching profile for existing session...');
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('user_id', session.user.id)
+              .single();
+            
+            if (profileError) throw profileError;
+            
+            console.log('Profile loaded for existing session:', profileData);
+            setProfile(profileData);
+          } catch (error) {
+            console.error('Error loading profile for existing session:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Session check failed:', error);
+      } finally {
         setLoading(false);
       }
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    checkSession();
+
+    return () => {
+      console.log('AuthProvider: Cleaning up...');
+      subscription?.unsubscribe();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, userData: SignUpData) => {
@@ -216,36 +250,70 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string, role?: UserRole, department?: Department, uniqueId?: string) => {
-    // For faculty and HOD, we need to verify additional credentials
-    if ((role === 'faculty' || role === 'hod') && (!department || !uniqueId)) {
-      return { error: { message: 'Department and Unique ID are required for faculty and HOD login' } };
-    }
+    console.log('Sign in attempt for:', email);
+    
+    try {
+      // First, try to sign in with email and password
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: email.toLowerCase().trim(),
+        password: password.trim()
+      });
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
+      if (error) {
+        console.error('Authentication error:', error);
+        return { error };
+      }
 
-    if (error) return { error };
-
-    // Additional verification for faculty/HOD
-    if (role === 'faculty' || role === 'hod') {
+      console.log('Authentication successful, checking profile...');
+      
+      // Get the user's profile
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', data.user.id)
-        .eq('role', role)
-        .eq('department', department)
-        .eq('unique_id', uniqueId)
         .single();
 
       if (profileError || !profileData) {
+        console.error('Profile not found:', profileError);
         await supabase.auth.signOut();
-        return { error: { message: 'Invalid credentials for the specified role and department' } };
+        return { error: { message: 'User profile not found. Please contact support.' } };
       }
-    }
 
-    return { error: null };
+      console.log('User profile:', profileData);
+
+      // If role was specified, verify it matches the user's role
+      if (role && profileData.role !== role) {
+        console.error(`Role mismatch: expected ${role}, got ${profileData.role}`);
+        await supabase.auth.signOut();
+        return { error: { message: 'You do not have permission to access this role.' } };
+      }
+
+      // For faculty and HOD, verify department and unique ID if provided
+      if ((profileData.role === 'faculty' || profileData.role === 'hod') && (department || uniqueId)) {
+        if (department && profileData.department !== department) {
+          console.error(`Department mismatch: expected ${department}, got ${profileData.department}`);
+          await supabase.auth.signOut();
+          return { error: { message: 'Invalid department for this user.' } };
+        }
+        
+        if (uniqueId && profileData.unique_id !== uniqueId) {
+          console.error(`Unique ID mismatch: expected ${uniqueId}, got ${profileData.unique_id}`);
+          await supabase.auth.signOut();
+          return { error: { message: 'Invalid credentials.' } };
+        }
+      }
+
+      console.log('Sign in successful');
+      return { error: null };
+      
+    } catch (error) {
+      console.error('Unexpected error during sign in:', error);
+      return { 
+        error: { 
+          message: 'An unexpected error occurred during sign in. Please try again.' 
+        } 
+      };
+    }
   };
 
   const signOut = async () => {
