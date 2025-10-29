@@ -49,7 +49,7 @@ const PrincipalDashboard = () => {
   }, []);
 
   const pendingBookings = bookings.filter(b => b.status === 'pending_principal');
-  const approvedBookings = bookings.filter(b => ['pending_pro', 'approved'].includes(b.status));
+  const approvedBookings = bookings.filter(b => b.status === 'approved'); // Principal is now final approver
   const rejectedBookings = bookings.filter(b => b.status === 'rejected');
   const allBookings = bookings;
 
