@@ -64,7 +64,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       "TRAINING",
       "PLACEMENT",
       "SCIENCE & HUMANITIES",
-      "IIIE CELL",
       "HR",
       "INNOVATION",
       "AI_ML",

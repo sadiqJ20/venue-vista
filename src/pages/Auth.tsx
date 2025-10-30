@@ -21,7 +21,7 @@ type UserRole = Database['public']['Enums']['user_role'];
 // Create a type-safe way to get all department values
 const ALL_DEPARTMENTS: readonly Department[] = [
   'CSE', 'IT', 'ECE', 'EEE', 'MECH', 'CIVIL', 'AERO', 'CHEMICAL', 'AIDS', 'CSBS',
-  'MCA', 'MBA', 'TRAINING', 'PLACEMENT', 'SCIENCE & HUMANITIES', 'IIIE CELL',
+  'MCA', 'MBA', 'TRAINING', 'PLACEMENT', 'SCIENCE & HUMANITIES',
   'HR', 'INNOVATION', 'AI_ML', 'NCC', 'NSS', 'III', 'IEDC', 'PRO'
 ] as const satisfies readonly string[] as unknown as Department[];
 

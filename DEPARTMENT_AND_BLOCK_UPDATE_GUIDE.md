@@ -12,7 +12,6 @@ The following departments have been added to the system:
 - TRAINING
 - PLACEMENT
 - SCIENCE & HUMANITIES
-- IIIE CELL
 - HR
 - INNOVATION
 - AI_ML

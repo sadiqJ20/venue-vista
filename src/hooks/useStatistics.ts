@@ -91,7 +91,6 @@ export function useStatistics(initialFrom?: string | null, initialTo?: string | 
           "TRAINING",
           "PLACEMENT",
           "SCIENCE & HUMANITIES",
-          "IIIE CELL",
           "HR",
           "INNOVATION",
           "AI_ML",
