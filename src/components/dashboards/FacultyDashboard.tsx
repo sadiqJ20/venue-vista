@@ -82,31 +82,48 @@ const FacultyDashboard = () => {
 
   const fetchBookings = async () => {
     if (!profile?.id) return;
+    
+    setLoading(true);
+    console.log('Fetching bookings for faculty:', profile.id);
 
-    const { data, error } = await supabase
-      .from('bookings')
-      .select(`
-        *,
-        halls:hall_id (
-          name,
-          block,
-          type,
-          capacity
-        )
-      `)
-      .eq('faculty_id', profile.id)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          halls:hall_id (
+            id,
+            name,
+            block,
+            type,
+            capacity,
+            has_ac,
+            has_mic,
+            has_projector,
+            has_audio_system
+          )
+        `)
+        .eq('faculty_id', profile.id)
+        .order('event_date', { ascending: false })
+        .order('start_time', { ascending: false });
 
-    if (error) {
+      if (error) {
+        console.error('Error fetching bookings:', error);
+        throw error;
+      }
+
+      console.log(`Fetched ${data?.length || 0} bookings`);
+      setBookings(data || []);
+    } catch (error) {
+      console.error('Error in fetchBookings:', error);
       toast({
         title: "Error",
-        description: "Failed to fetch bookings",
+        description: "Failed to fetch bookings. Please try again.",
         variant: "destructive"
       });
-    } else {
-      setBookings(data || []);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const getStatusColor = (status: string) => {

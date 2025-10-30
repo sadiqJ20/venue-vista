@@ -26,6 +26,8 @@ const PrincipalDashboard = () => {
         .from('bookings')
         .select(`
           *,
+          hod_id,
+          hod_name,
           halls:hall_id (
             name,
             block,
