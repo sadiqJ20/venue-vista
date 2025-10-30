@@ -12,11 +12,21 @@ import { GraduationCap, Users, UserCheck, Briefcase, Shield } from "lucide-react
 import PMCHeader from "@/components/PMCHeader";
 import Footer from "@/components/Footer";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 
-type Department = 'CSE' | 'IT' | 'ECE' | 'EEE' | 'MECH' | 'CIVIL' | 'AERO' | 'CHEMICAL' | 'AIDS' | 'CSBS' | 'MCA' | 'MBA' | 'TRAINING' | 'PLACEMENT' | 'SCIENCE & HUMANITIES' | 'IIIE CELL' | 'HR' | 'INNOVATION' | 'AI_ML';
-type UserRole = 'faculty' | 'hod' | 'principal' | 'pro' | 'chairman';
+// Define the Department type from the database enum
+type Department = Database['public']['Enums']['department_name'];
+type UserRole = Database['public']['Enums']['user_role'];
 
-const departments: Department[] = ['CSE', 'IT', 'ECE', 'EEE', 'MECH', 'CIVIL', 'AERO', 'CHEMICAL', 'AIDS', 'CSBS', 'MCA', 'MBA', 'TRAINING', 'PLACEMENT', 'SCIENCE & HUMANITIES', 'IIIE CELL', 'HR', 'INNOVATION', 'AI_ML'];
+// Create a type-safe way to get all department values
+const ALL_DEPARTMENTS: readonly Department[] = [
+  'CSE', 'IT', 'ECE', 'EEE', 'MECH', 'CIVIL', 'AERO', 'CHEMICAL', 'AIDS', 'CSBS',
+  'MCA', 'MBA', 'TRAINING', 'PLACEMENT', 'SCIENCE & HUMANITIES', 'IIIE CELL',
+  'HR', 'INNOVATION', 'AI_ML', 'NCC', 'NSS', 'III', 'IEDC', 'PRO'
+] as const satisfies readonly string[] as unknown as Department[];
+
+// Export the departments array with the correct type
+const departments: Department[] = [...ALL_DEPARTMENTS];
 
 const Auth = () => {
   const { signUp, signIn, user } = useAuth();
