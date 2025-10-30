@@ -319,20 +319,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signOut = async () => {
     try {
       console.log('Signing out user...');
-      await supabase.auth.signOut();
+      
+      // Clear all auth state first
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      
+      // Sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Supabase sign out error:', error);
+        throw error;
+      }
       
       // Clear any local storage items related to auth
-      localStorage.clear();
+      localStorage.removeItem('sb-auth-state');
+      localStorage.removeItem('sb-auth-token');
       sessionStorage.clear();
+      
+      // Clear all cookies
+      document.cookie.split(';').forEach(c => {
+        document.cookie = c.trim().split('=')[0] + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
+      });
       
       // Force reload to clear all state and redirect to auth
       window.location.href = '/auth';
+      window.location.reload();
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('Error during sign out:', error);
       // Even if signOut fails, clear storage and redirect
       localStorage.clear();
       sessionStorage.clear();
+      setUser(null);
+      setSession(null);
+      setProfile(null);
       window.location.href = '/auth';
+      window.location.reload();
     }
   };
 

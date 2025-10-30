@@ -56,40 +56,56 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
 
-  // Safely get HOD name with fallback
+  // Get HOD name from the current user if they are a HOD, otherwise fetch from booking data
   useEffect(() => {
     const getHodName = async () => {
-      // If we have a direct HOD name, use it
+      // If we have a direct HOD name in the booking data, use it
       if (booking?.hod_name) {
         setHodName(booking.hod_name);
         return;
       }
       
-      // If we have a HOD ID but no name, try to fetch it
+      // If current user is a HOD, use their name
+      if (userRole === 'hod' && profile?.name) {
+        setHodName(profile.name);
+        return;
+      }
+      
+      // If we have a HOD ID but no name, try to fetch it from profiles
       if (booking?.hod_id) {
         try {
           const { data, error } = await supabase
             .from('profiles')
-            .select('name')
+            .select('name, role')
             .eq('id', booking.hod_id)
+            .eq('role', 'hod')
             .single();
 
           if (!error && data?.name) {
-            setHodName(data.name);
+            const fetchedHodName = data.name;
+            setHodName(fetchedHodName);
+            
+            // Update the booking with the HOD name for future reference
+            if (booking.id) {
+              await supabase
+                .from('bookings')
+                .update({ hod_name: fetchedHodName })
+                .eq('id', booking.id);
+            }
           } else {
-            setHodName('Not available');
+            setHodName('HOD not assigned');
           }
         } catch (error) {
           console.error('Error fetching HOD name:', error);
-          setHodName('Not available');
+          setHodName('HOD not assigned');
         }
       } else {
-        setHodName('Not available');
+        setHodName('HOD not assigned');
       }
     };
 
     getHodName();
-  }, [booking?.hod_id, booking?.hod_name]);
+  }, [booking?.id, booking?.hod_id, booking?.hod_name, booking?.faculty_name, userRole, profile]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -385,8 +401,6 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
                     <Badge className={`${getStatusColor(booking.status)} text-white`}>
                       {getStatusText(booking.status)}
                     </Badge>
-                    <span className="hidden sm:inline">•</span>
-                    <span className="text-xs sm:text-sm">ID: {booking.id}</span>
                   </div>
                 </div>
                 <div className="h-px bg-border w-full" />
@@ -433,7 +447,7 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
                   </div>
                   <div className="bg-muted/30 p-4 rounded-lg border border-border">
                     <p className="text-sm font-medium text-muted-foreground mb-1">HOD Name</p>
-                    <p className="text-base">
+                    <p className="text-base">{hodName || (booking.hod_name ? booking.hod_name : 'HOD not assigned')}
                       {hodName}
                     </p>
                   </div>
@@ -511,25 +525,23 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
               {/* Hall Information */}
               {booking.halls && (
                 <section className="space-y-3">
-                  <h3 className="text-lg font-semibold text-foreground/90 pb-1 border-b border-border">Venue Details</h3>
-                  <div className="bg-muted/30 p-4 rounded-lg border border-border">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Hall Name</p>
-                        <p className="text-base">{booking.halls.name}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Block</p>
-                        <p className="text-base">{booking.halls.block}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Capacity</p>
-                        <p className="text-base">{booking.halls.capacity} people</p>
-                      </div>
+                  <h3 className="text-lg font-semibold text-foreground/90 pb-1 border-b border-border">Hall Information</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Hall Name</p>
+                      <p className="text-base">{booking.halls.name}</p>
                     </div>
-                    <div className="mt-3">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Block</p>
+                      <p className="text-base">{booking.halls.block}</p>
+                    </div>
+                    <div>
                       <p className="text-sm font-medium text-muted-foreground mb-1">Hall Type</p>
                       <p className="text-base capitalize">{booking.halls.type.toLowerCase()}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Capacity</p>
+                      <p className="text-base">{booking.halls.capacity} people</p>
                     </div>
                   </div>
                 </section>

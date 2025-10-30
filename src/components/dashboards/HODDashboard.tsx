@@ -1,6 +1,50 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useHallAvailability } from "@/hooks/useHallAvailability";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { LogOut, UserCheck, Bell, BellRing, MapPin, Users, AlertCircle, ArrowRightLeft, Calendar, Clock } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import BookingCard from "@/components/BookingCard";
+import HallSwitchDialog from "@/components/HallSwitchDialog";
+import { NotificationCenter } from "@/components/NotificationCenter";
+import { useToast } from "@/hooks/use-toast";
+
+// Types
+type BookingStatus = 'pending_hod' | 'pending_principal' | 'pending_pro' | 'approved' | 'rejected';
+
+interface Hall {
+  id: string;
+  name: string;
+  block: string;
+  type: string;
+  capacity: number;
+  has_ac: boolean;
+  has_mic: boolean;
+  has_projector: boolean;
+  has_audio_system: boolean;
+}
+
+interface Booking {
+  id: string;
+  event_name: string;
+  faculty_name: string;
+  department: string;
+  event_date: string;
+  start_time: string;
+  end_time: string;
+  status: BookingStatus;
+  rejection_reason?: string;
+  hall_id: string;
+  halls: Hall;
+  created_at: string;
+  updated_at: string;
+  faculty_id: string;
+  hod_id?: string;
+  hod_name?: string;
+}
 
 // Mock notifications if the hook fails
 const useMockNotifications = () => ({
@@ -18,61 +62,74 @@ try {
 } catch (error) {
   console.warn('useNotifications hook not available, using mock data');
 }
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
-import { LogOut, UserCheck, Bell, BellRing, MapPin, Users, AlertCircle, ArrowRightLeft } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import BookingCard from "@/components/BookingCard";
-import HallSwitchDialog from "@/components/HallSwitchDialog";
-import { NotificationCenter } from "@/components/NotificationCenter";
 
 const HODDashboard = () => {
   const { profile, signOut } = useAuth();
+  const { toast } = useToast();
   
   // Use notifications hook with fallback to mock data
   const { notifications = [], unreadCount = 0, markAllAsRead = () => {} } = useNotifications();
   const { halls, loading: hallsLoading, refreshAvailability } = useHallAvailability();
-  const [bookings, setBookings] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSwitchDialog, setShowSwitchDialog] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [activeTab, setActiveTab] = useState('pending');
 
   const fetchBookings = async () => {
-    if (!profile || !profile.department) {
-      console.error('No profile or department found');
-      setLoading(false);
-      return;
-    }
+    if (!profile?.id) return;
     
     setLoading(true);
     try {
-      console.log('Fetching bookings for department:', profile.department);
+      console.log('Fetching bookings for HOD:', profile.id);
+      
+      // First, get the department from the profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('department')
+        .eq('id', profile.id)
+        .single();
+
+      if (profileError || !profileData?.department) {
+        console.error('Error fetching department:', profileError);
+        throw new Error('Could not determine department');
+      }
+
+      // Then fetch all bookings for this department
       const { data, error } = await supabase
         .from('bookings')
         .select(`
           *,
           halls:hall_id (
+            id,
             name,
             block,
             type,
-            capacity
+            capacity,
+            has_ac,
+            has_mic,
+            has_projector,
+            has_audio_system
           )
         `)
-        .eq('department', profile.department)
-        .order('created_at', { ascending: false });
+        .or(`department.eq.${profileData.department},faculty_id.eq.${profile.id}`)
+        .order('event_date', { ascending: true })
+        .order('start_time', { ascending: true });
 
       if (error) {
-        console.error('Supabase error:', error);
+        console.error('Error fetching bookings:', error);
         throw error;
       }
       
-      console.log('Fetched bookings:', data?.length || 0);
+      console.log(`Fetched ${data?.length || 0} bookings for department ${profileData.department}`);
       setBookings(data || []);
     } catch (error) {
       console.error('Error in fetchBookings:', error);
-      // Consider showing an error message to the user here
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch bookings. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
@@ -96,9 +153,46 @@ const HODDashboard = () => {
     setSelectedBooking(null);
   };
 
+  // Categorize bookings by status
   const pendingBookings = bookings.filter(b => b.status === 'pending_hod');
-  const acceptedBookings = bookings.filter(b => ['pending_principal', 'pending_pro', 'approved'].includes(b.status));
+  const inReviewBookings = bookings.filter(b => ['pending_principal', 'pending_pro'].includes(b.status));
+  const approvedBookings = bookings.filter(b => b.status === 'approved');
   const rejectedBookings = bookings.filter(b => b.status === 'rejected');
+  
+  // Get upcoming and past bookings
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
+  
+  const upcomingBookings = bookings.filter(booking => {
+    if (booking.event_date > today) return true;
+    if (booking.event_date === today && booking.end_time > currentTime) return true;
+    return false;
+  });
+  
+  const pastBookings = bookings.filter(booking => {
+    if (booking.event_date < today) return true;
+    if (booking.event_date === today && booking.end_time < currentTime) return true;
+    return false;
+  });
+  
+  // Get status badge
+  const getStatusBadge = (status: BookingStatus) => {
+    const statusConfig = {
+      pending_hod: { label: 'Pending HOD Approval', variant: 'warning' },
+      pending_principal: { label: 'Pending Principal', variant: 'warning' },
+      pending_pro: { label: 'Pending PRO Review', variant: 'info' },
+      approved: { label: 'Approved', variant: 'success' },
+      rejected: { label: 'Rejected', variant: 'destructive' }
+    };
+    
+    const config = statusConfig[status] || { label: status, variant: 'default' };
+    return (
+      <Badge variant={config.variant as any} className="capitalize">
+        {config.label}
+      </Badge>
+    );
+  };
 
   return (
     <div className="space-y-8">

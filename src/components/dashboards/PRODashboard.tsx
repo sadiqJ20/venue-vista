@@ -24,6 +24,8 @@ const PRODashboard = () => {
         .from('bookings')
         .select(`
           *,
+          hod_id,
+          hod_name,
           halls:hall_id (
             name,
             block,
@@ -103,7 +105,12 @@ const PRODashboard = () => {
                 ) : (
                   <div className="space-y-4">
                     {approvedBookings.map(booking => (
-                      <BookingCard key={booking.id} booking={booking} />
+                      <BookingCard 
+                        key={booking.id} 
+                        booking={booking} 
+                        userRole="pro"
+                        showActions={false}
+                      />
                     ))}
                   </div>
                 )}

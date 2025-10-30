@@ -205,7 +205,29 @@ const profile = auth?.profile;
 
         setLoading(true);
         try {
-            // Create sanitized booking payload (explicitly exclude any unwanted fields)
+            // First, fetch the HOD's details from the database
+            let hodName = 'Not available';
+            
+            try {
+                if (profile.hod_id) {
+                    const { data: hodData, error: hodError } = await supabase
+                        .from('profiles')
+                        .select('name, role')
+                        .eq('id', profile.hod_id)
+                        .eq('role', 'hod')
+                        .single();
+                    
+                    if (!hodError && hodData?.name) {
+                        hodName = hodData.name;
+                    } else {
+                        console.warn('HOD not found in profiles or not a HOD');
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching HOD details:', error);
+            }
+
+            // Create sanitized booking payload
             const bookingPayload = {
                 faculty_id: profile.id,
                 hall_id: hall.id,
@@ -218,9 +240,9 @@ const profile = auth?.profile;
                 event_name: formData.eventName.trim(),
                 description: formData.description.trim(),
                 department: profile.department!,
-                // Set HOD information from profile
-                hod_id: profile.hod_id,  // Store HOD ID if available
-                hod_name: profile.hod_name || 'Not available',  // Use HOD name or fallback
+                // Set HOD information
+                hod_id: profile.hod_id,
+                hod_name: hodName,
                 event_date: formData.eventDate,
                 start_time: formData.startTime,
                 end_time: formData.endTime,
