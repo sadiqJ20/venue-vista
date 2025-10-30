@@ -476,7 +476,6 @@ export type Database = {
         | "TRAINING"
         | "PLACEMENT"
         | "SCIENCE & HUMANITIES"
-        | "IIIE CELL"
         | "HR"
         | "INNOVATION"
         | "AI_ML"
