@@ -46,7 +46,7 @@ const PrincipalDashboard = () => {
             has_audio_system
           )
         `)
-        .or('status.eq.pending_principal,status.eq.approved')
+        .or('status.eq.pending_principal,status.eq.approved,status.eq.rejected')
         .order('event_date', { ascending: true })
         .order('start_time', { ascending: true });
 

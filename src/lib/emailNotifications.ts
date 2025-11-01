@@ -30,10 +30,15 @@ export async function sendBookingNotification(
     } else if (status === "Approved") {
       // Route to next approver based on actionBy
       if (actionBy === "HOD") {
+        // Notify Principal
         const { data } = await supabase.from("profiles").select("email").eq("role", "principal").maybeSingle();
         recipientEmail = data?.email || "";
-      } else if (actionBy === "Principal" || actionBy === "PRO") {
-        // Get faculty email from profiles table using faculty_id
+      } else if (actionBy === "Principal") {
+        // Notify PRO for final approval
+        const { data } = await supabase.from("profiles").select("email").eq("role", "pro").maybeSingle();
+        recipientEmail = data?.email || "";
+      } else if (actionBy === "PRO") {
+        // Get faculty email to notify final approval
         if (booking.faculty_id) {
           const { data } = await supabase.from("profiles").select("email").eq("id", booking.faculty_id).maybeSingle();
           recipientEmail = data?.email || "";
@@ -128,37 +133,91 @@ export async function sendBookingNotification(
 
     await sendTestEmail(emailParams);
 
-    // If Principal approved, also notify PRO per updated workflow
-    if (status === "Approved" && actionBy === "Principal") {
+    // Create in-app notifications for relevant users
+    const notifications = [];
+    
+    // Always notify the faculty member
+    if (booking.faculty_id) {
+      notifications.push({
+        user_id: booking.faculty_id,
+        title: emailSubject,
+        message: emailMessage,
+        type: status.toLowerCase(),
+        read: false,
+        data: {
+          booking_id: booking.id,
+          event_name: booking.event_name,
+          status: status,
+          action_by: actionBy,
+          rejection_reason: rejectionReason
+        }
+      });
+    }
+
+    // If Principal approved, also notify PRO for final approval
+    if (status === 'Approved' && actionBy === 'Principal') {
       const { data: proProfile } = await supabase
-        .from("profiles")
-        .select("email, name")
-        .eq("role", "pro")
+        .from('profiles')
+        .select('id, email, name')
+        .eq('role', 'pro')
         .maybeSingle();
 
-      const proEmail = proProfile?.email || "";
-      if (proEmail) {
-        const proSubject = "Booking Request Update";
-        const proMessage = `Booking update for ${booking.event_name} (${booking.event_date} ${booking.start_time}-${booking.end_time})`;
+      if (proProfile?.id) {
+        // Email notification
+        const proEmail = proProfile.email;
+        const proSubject = 'New Booking Requires PRO Approval';
+        const proMessage = `A new booking for ${booking.event_name} requires your final approval.`;
+        
         await sendTestEmail({
           recipientEmail: proEmail,
           subject: proSubject,
           message: proMessage,
-          recipientName: "PRO",
+          recipientName: proProfile.name || 'PRO',
           faculty_name: booking.faculty_name,
-          faculty_contact: booking.faculty_phone ?? "",
+          faculty_contact: booking.faculty_phone ?? '',
           department: booking.department,
-          hall_name: booking.halls?.name ?? "",
+          hall_name: booking.halls?.name ?? 'Unknown Hall',
           event_name: booking.event_name,
           event_date: booking.event_date,
           start_time: booking.start_time,
           end_time: booking.end_time,
-          decision: "Approved",
-          decision_taken_by: "Principal",
-          comments: "This booking has been approved by both HOD and Principal.",
-          action_url: "/dashboard",
-          attendees_count: booking.attendees_count || booking.attendeesCount || booking.attendees || null,
+          decision: 'Pending',
+          decision_taken_by: 'PRO',
+          comments: 'This booking requires your final approval.',
+          action_url: '/dashboard/pro',
+          attendees_count: booking.attendees_count || booking.attendeesCount || booking.attendees || 0,
         });
+
+        // In-app notification
+        notifications.push({
+          user_id: proProfile.id,
+          title: proSubject,
+          message: proMessage,
+          type: 'pending_approval',
+          read: false,
+          data: {
+            booking_id: booking.id,
+            event_name: booking.event_name,
+            status: 'pending_pro',
+            action_by: 'Principal',
+            department: booking.department,
+            hall_name: booking.halls?.name || 'Unknown Hall',
+            event_date: booking.event_date,
+            start_time: booking.start_time,
+            end_time: booking.end_time
+          }
+        });
+      }
+    }
+
+    // Insert all notifications in a single transaction
+    if (notifications.length > 0) {
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert(notifications);
+
+      if (notificationError) {
+        console.error('Error creating notifications:', notificationError);
       }
     }
 
