@@ -42,6 +42,7 @@ const ChairmanDashboard = () => {
             block
           )
         `)
+        .eq('status', 'approved') // Only show events approved by Principal
         .order('event_date', { ascending: false });
 
       // Apply date filter if provided
