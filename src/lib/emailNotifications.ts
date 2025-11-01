@@ -116,6 +116,9 @@ export async function sendBookingNotification(
       decision_taken_by: actionBy,
       comments: commentsText,
       action_url: "/dashboard",
+      attendees: booking.attendees_count || booking.attendeesCount || booking.attendees || null,
+      // Add direct mapping for the email template
+      attendees_count: booking.attendees_count || booking.attendeesCount || booking.attendees || null,
     });
 
     // If Principal approved, also notify PRO per updated workflow
@@ -147,6 +150,7 @@ export async function sendBookingNotification(
           decision_taken_by: "Principal",
           comments: "This booking has been approved by both HOD and Principal.",
           action_url: "/dashboard",
+          attendees_count: booking.attendees_count || booking.attendeesCount || booking.attendees || null,
         });
       }
     }

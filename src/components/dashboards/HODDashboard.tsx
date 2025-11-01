@@ -7,44 +7,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { LogOut, UserCheck, Bell, BellRing, MapPin, Users, AlertCircle, ArrowRightLeft, Calendar, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import BookingCard from "@/components/BookingCard";
 import HallSwitchDialog from "@/components/HallSwitchDialog";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { useToast } from "@/hooks/use-toast";
 
-// Types
-type BookingStatus = 'pending_hod' | 'pending_principal' | 'pending_pro' | 'approved' | 'rejected';
+type Booking = Database["public"]["Tables"]["bookings"]["Row"] & {
+  halls: {
+    id: string;
+    name: string;
+    block: string;
+    type: string;
+    capacity: number;
+    has_ac: boolean;
+    has_mic: boolean;
+    has_projector: boolean;
+    has_audio_system: boolean;
+  };
+};
 
-interface Hall {
-  id: string;
-  name: string;
-  block: string;
-  type: string;
-  capacity: number;
-  has_ac: boolean;
-  has_mic: boolean;
-  has_projector: boolean;
-  has_audio_system: boolean;
-}
-
-interface Booking {
-  id: string;
-  event_name: string;
-  faculty_name: string;
-  department: string;
-  event_date: string;
-  start_time: string;
-  end_time: string;
-  status: BookingStatus;
-  rejection_reason?: string;
-  hall_id: string;
-  halls: Hall;
-  created_at: string;
-  updated_at: string;
-  faculty_id: string;
-  hod_id?: string;
-  hod_name?: string;
-}
+type BookingStatus = Booking["status"];
 
 // Mock notifications if the hook fails
 const useMockNotifications = () => ({
@@ -67,6 +50,8 @@ const HODDashboard = () => {
   const { profile, signOut } = useAuth();
   const { toast } = useToast();
   
+  console.log('HODDashboard - Profile:', profile); // Debug log
+  
   // Use notifications hook with fallback to mock data
   const { notifications = [], unreadCount = 0, markAllAsRead = () => {} } = useNotifications();
   const { halls, loading: hallsLoading, refreshAvailability } = useHallAvailability();
@@ -75,27 +60,75 @@ const HODDashboard = () => {
   const [showSwitchDialog, setShowSwitchDialog] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [activeTab, setActiveTab] = useState('pending');
+  
+  // Debug effect to log state changes
+  useEffect(() => {
+    console.log('HODDashboard - Updated state:', {
+      profile,
+      bookingsCount: bookings.length,
+      loading,
+      activeTab
+    });
+  }, [profile, bookings, loading, activeTab]);
 
   const fetchBookings = async () => {
-    if (!profile?.id) return;
+    if (!profile?.id) {
+      console.error('No profile ID available');
+      toast({
+        title: 'Error',
+        description: 'User profile not loaded. Please refresh the page.',
+        variant: 'destructive',
+      });
+      setLoading(false);
+      return;
+    }
     
     setLoading(true);
+    console.log('Fetching bookings for HOD with ID:', profile.id);
+    
     try {
-      console.log('Fetching bookings for HOD:', profile.id);
-      
-      // First, get the department from the profile
+      // First, get the full profile to verify role and department
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
-        .select('department')
+        .select('*')
         .eq('id', profile.id)
         .single();
 
-      if (profileError || !profileData?.department) {
-        console.error('Error fetching department:', profileError);
-        throw new Error('Could not determine department');
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        throw new Error('Could not load user profile');
       }
 
-      // Then fetch all bookings for this department
+      console.log('HOD Profile Data:', {
+        id: profileData.id,
+        role: profileData.role,
+        department: profileData.department,
+        name: profileData.name
+      });
+
+      if (profileData.role !== 'hod') {
+        console.error('User does not have HOD role');
+        toast({
+          title: 'Access Denied',
+          description: 'You do not have permission to access the HOD dashboard.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!profileData.department) {
+        console.error('No department assigned to HOD');
+        toast({
+          title: 'Configuration Error',
+          description: 'Your account is not assigned to any department. Please contact support.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Fetch bookings for the department
+      console.log(`Fetching bookings for department: ${profileData.department}`);
+      
       const { data, error } = await supabase
         .from('bookings')
         .select(`
@@ -118,16 +151,17 @@ const HODDashboard = () => {
 
       if (error) {
         console.error('Error fetching bookings:', error);
-        throw error;
+        throw new Error(`Database error: ${error.message}`);
       }
       
-      console.log(`Fetched ${data?.length || 0} bookings for department ${profileData.department}`);
+      console.log(`Successfully fetched ${data?.length || 0} bookings`);
       setBookings(data || []);
-    } catch (error) {
+      
+    } catch (error: any) {
       console.error('Error in fetchBookings:', error);
       toast({
         title: 'Error',
-        description: 'Failed to fetch bookings. Please try again.',
+        description: error.message || 'Failed to load bookings. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -158,6 +192,7 @@ const HODDashboard = () => {
   const inReviewBookings = bookings.filter(b => ['pending_principal', 'pending_pro'].includes(b.status));
   const approvedBookings = bookings.filter(b => b.status === 'approved');
   const rejectedBookings = bookings.filter(b => b.status === 'rejected');
+  const acceptedBookings = [...approvedBookings]; // Add this line to fix the reference
   
   // Get upcoming and past bookings
   const now = new Date();
