@@ -58,6 +58,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       async (event, session) => {
         console.log(`Auth state changed: ${event}`, { hasSession: !!session, hasUser: !!session?.user });
         
+        console.log('Auth state changed - Session:', {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          userId: session?.user?.id,
+          email: session?.user?.email
+        });
+        
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -70,9 +77,29 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               .eq('user_id', session.user.id)
               .single();
             
-            if (error) throw error;
+            if (error) {
+              console.error('Error fetching profile:', error);
+              throw error;
+            }
             
-            console.log('Profile loaded:', profileData);
+            console.log('Profile loaded:', {
+              id: profileData.id,
+              user_id: profileData.user_id,
+              name: profileData.name,
+              email: profileData.email,
+              role: profileData.role,
+              department: profileData.department,
+              created_at: profileData.created_at
+            });
+            
+            // Verify required fields
+            if (!profileData.role) {
+              console.warn('User profile is missing role');
+            }
+            if (!profileData.department) {
+              console.warn('User profile is missing department');
+            }
+            
             setProfile(profileData);
           } catch (error) {
             console.error('Error loading profile:', error);

@@ -22,6 +22,8 @@ export interface SendTestEmailParams {
   decision_taken_by?: string; // e.g., HOD/Principal/PRO
   comments?: string;
   action_url?: string;
+  attendees?: number | null; // Number of attendees
+  attendees_count?: number | null; // Alias for attendees_count for template compatibility
 }
 
 export async function sendTestEmail(params: SendTestEmailParams): Promise<void> {
@@ -98,6 +100,12 @@ export async function sendTestEmail(params: SendTestEmailParams): Promise<void> 
     dept: departmentValue,
     department_name: departmentValue,
     dept_name: departmentValue,
+    // Attendees (multiple variations for template compatibility)
+    attendees: params.attendees?.toString() || 'Not specified',
+    Attendees: params.attendees?.toString() || 'Not specified',
+    num_attendees: params.attendees?.toString() || 'Not specified',
+    attendees_count: params.attendees?.toString() || 'Not specified',
+    'Attendees Count': params.attendees?.toString() || 'Not specified',
     // Decision taken by
     decision_by: decisionByValue,
     decisionBy: decisionByValue,
