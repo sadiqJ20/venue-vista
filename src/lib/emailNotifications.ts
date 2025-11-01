@@ -32,25 +32,16 @@ export async function sendBookingNotification(
       if (actionBy === "HOD") {
         const { data } = await supabase.from("profiles").select("email").eq("role", "principal").maybeSingle();
         recipientEmail = data?.email || "";
-      } else if (actionBy === "Principal") {
-        // Principal is now final approver → notify faculty
-        recipientEmail = booking.faculty_email || "";
-        if (!recipientEmail && booking.faculty_id) {
-          const { data } = await supabase.from("profiles").select("email").eq("id", booking.faculty_id).maybeSingle();
-          recipientEmail = data?.email || "";
-        }
-      } else if (actionBy === "PRO") {
-        // Keep for backward compatibility
-        recipientEmail = booking.faculty_email || "";
-        if (!recipientEmail && booking.faculty_id) {
+      } else if (actionBy === "Principal" || actionBy === "PRO") {
+        // Get faculty email from profiles table using faculty_id
+        if (booking.faculty_id) {
           const { data } = await supabase.from("profiles").select("email").eq("id", booking.faculty_id).maybeSingle();
           recipientEmail = data?.email || "";
         }
       }
     } else if (status === "Rejected") {
       // Notify faculty on rejection
-      recipientEmail = booking.faculty_email || "";
-      if (!recipientEmail && booking.faculty_id) {
+      if (booking.faculty_id) {
         const { data } = await supabase.from("profiles").select("email").eq("id", booking.faculty_id).maybeSingle();
         recipientEmail = data?.email || "";
       }
@@ -128,7 +119,6 @@ export async function sendBookingNotification(
       extra: {
         // Include all the original template variables as extra data
         to_email: recipientEmail,
-        faculty_email: booking.faculty_email || '',
         status,
         action_by: actionBy,
         hod_name: booking.hod_name || 'HOD',
