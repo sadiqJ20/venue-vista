@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
 import { LogOut, Briefcase, Bell, BellRing } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import BookingCard from "@/components/BookingCard";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import BookedHallsOverview from "@/components/BookedHallsOverview";
@@ -14,40 +16,115 @@ import BookedHallsOverview from "@/components/BookedHallsOverview";
 const PRODashboard = () => {
   const { profile, signOut } = useAuth();
   const { notifications, unreadCount, markAllAsRead } = useNotifications();
-  const [bookings, setBookings] = useState<any[]>([]);
+  const { toast } = useToast();
+  type Booking = {
+    id: string;
+    event_name: string;
+    event_date: string;
+    start_time: string;
+    end_time: string;
+    status: 'pending_hod' | 'pending_principal' | 'pending_pro' | 'approved' | 'rejected';
+    department: string;
+    faculty_name: string;
+    organizer_name: string;
+    halls: {
+      id: string;
+      name: string;
+      block: string;
+      type: string;
+      capacity: number;
+    } | null;
+  };
+
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchBookings = async () => {
     setLoading(true);
+    console.log('Fetching bookings for PRO...');
+    
     try {
+      // First, verify the table structure
+      console.log('Checking bookings table structure...');
+      
+      // Fetch all approved bookings with all fields needed for the View Details modal
       const { data, error } = await supabase
         .from('bookings')
         .select(`
           *,
-          hod_id,
-          hod_name,
           halls:hall_id (
+            id,
             name,
             block,
             type,
-            capacity
+            capacity,
+            has_ac,
+            has_mic,
+            has_projector,
+            has_audio_system
           )
         `)
-        .eq('status', 'approved') // PRO only sees approved bookings
-        .order('created_at', { ascending: false });
+        .or('status.eq.approved,status.eq.pending_pro')
+        .order('event_date', { ascending: true })
+        .order('start_time', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching bookings:', error);
+        throw error;
+      }
+      
+      console.log(`Successfully fetched ${data?.length || 0} approved bookings`);
+      console.log('Sample booking data:', data?.[0]);
       setBookings(data || []);
     } catch (error) {
-      console.error('Error fetching bookings:', error);
+      console.error('Error in fetchBookings:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load bookings. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchBookings();
-  }, []);
+    console.log('PRODashboard mounted, fetching bookings...');
+    console.log('Profile:', profile);
+    
+    const fetchData = async () => {
+      try {
+        // Test the connection first
+        console.log('Testing database connection...');
+        const { data: testData, error: testError } = await supabase
+          .from('bookings')
+          .select('id')
+          .limit(1);
+          
+        if (testError) {
+          console.error('Database connection test failed:', testError);
+          toast({
+            title: 'Database Error',
+            description: 'Could not connect to the database. Please try again later.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        
+        console.log('Database connection test successful');
+        await fetchBookings();
+      } catch (error) {
+        console.error('Error in initial data fetch:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load bookings. Please refresh the page.',
+          variant: 'destructive',
+        });
+      }
+    };
+    
+    fetchData();
+  }, [profile?.id]);
 
   const approvedBookings = bookings.filter(b => b.status === 'approved');
   const rejectedBookings = bookings.filter(b => b.status === 'rejected');

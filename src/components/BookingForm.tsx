@@ -206,25 +206,27 @@ const profile = auth?.profile;
         setLoading(true);
         try {
             // First, fetch the HOD's details from the database
-            let hodName = 'Not available';
+            let hodName = 'HOD not assigned'; // Default value
             
-            try {
-                if (profile.hod_id) {
+            if (profile.hod_id) {
+                try {
                     const { data: hodData, error: hodError } = await supabase
                         .from('profiles')
                         .select('name, role')
                         .eq('id', profile.hod_id)
-                        .eq('role', 'hod')
                         .single();
                     
                     if (!hodError && hodData?.name) {
                         hodName = hodData.name;
+                        console.log('Fetched HOD name:', hodName);
                     } else {
-                        console.warn('HOD not found in profiles or not a HOD');
+                        console.warn('HOD not found in profiles:', hodError);
                     }
+                } catch (error) {
+                    console.error('Error fetching HOD details:', error);
                 }
-            } catch (error) {
-                console.error('Error fetching HOD details:', error);
+            } else {
+                console.warn('No HOD ID found in profile');
             }
 
             // Create sanitized booking payload
