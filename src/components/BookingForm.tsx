@@ -205,28 +205,35 @@ const profile = auth?.profile;
 
         setLoading(true);
         try {
-            // First, fetch the HOD's details from the database
+            // First, fetch the HOD for the faculty's department
+            let hodId = null;
             let hodName = 'HOD not assigned'; // Default value
             
-            if (profile.hod_id) {
-                try {
-                    const { data: hodData, error: hodError } = await supabase
-                        .from('profiles')
-                        .select('name, role')
-                        .eq('id', profile.hod_id)
-                        .single();
-                    
-                    if (!hodError && hodData?.name) {
-                        hodName = hodData.name;
-                        console.log('Fetched HOD name:', hodName);
-                    } else {
-                        console.warn('HOD not found in profiles:', hodError);
-                    }
-                } catch (error) {
-                    console.error('Error fetching HOD details:', error);
+            try {
+                // Find the HOD for the faculty's department
+                const { data: hodData, error: hodError } = await supabase
+                    .from('profiles')
+                    .select('id, name')
+                    .eq('department', profile.department)
+                    .eq('role', 'hod')
+                    .single();
+                
+                if (!hodError && hodData) {
+                    hodId = hodData.id;
+                    hodName = hodData.name || 'HOD';
+                    console.log('Found HOD for department:', { 
+                        department: profile.department, 
+                        hodId, 
+                        hodName 
+                    });
+                } else {
+                    console.warn('No HOD found for department:', { 
+                        department: profile.department, 
+                        error: hodError 
+                    });
                 }
-            } else {
-                console.warn('No HOD ID found in profile');
+            } catch (error) {
+                console.error('Error fetching HOD details:', error);
             }
 
             // Create sanitized booking payload
@@ -242,8 +249,7 @@ const profile = auth?.profile;
                 event_name: formData.eventName.trim(),
                 description: formData.description.trim(),
                 department: profile.department!,
-                // Set HOD information
-                hod_id: profile.hod_id,
+                // HOD information is now handled by the backend
                 hod_name: hodName,
                 event_date: formData.eventDate,
                 start_time: formData.startTime,

@@ -24,6 +24,8 @@ interface Booking {
   event_name: string;
   description?: string;
   department: string;
+  hod_id?: string;
+  hod_name: string;
   event_date: string;
   start_time: string;
   end_time: string;
@@ -35,7 +37,18 @@ interface Booking {
   status: string;
   rejection_reason?: string;
   created_at: string;
-  halls?: { name: string; block: string; type: string; capacity: number };
+  halls?: {
+    id: string;
+    name: string;
+    block: string;
+    type: string;
+    capacity: number;
+    has_ac?: boolean;
+    has_mic?: boolean;
+    has_projector?: boolean;
+    has_audio_system?: boolean;
+  };
+  hall_name?: string; // Fallback if halls is not available
 }
 
 interface BookingCardProps {
@@ -52,6 +65,56 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
   const [loading, setLoading] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [hodName, setHodName] = useState(booking.hod_name || "Not assigned");
+
+  useEffect(() => {
+    const getHodName = async () => {
+      // If we have a HOD name, use it
+      if (booking?.hod_name) {
+        setHodName(booking.hod_name);
+        return;
+      }
+      
+      // If no HOD name is set, try to get it from the department's HOD
+      if (booking?.department) {
+        try {
+          // Find the HOD for this department
+          const { data: hodData, error } = await supabase
+            .from('profiles')
+            .select('name, id')
+            .eq('department', booking.department)
+            .eq('role', 'hod')
+            .single();
+
+          if (error) throw error;
+
+          if (hodData?.name) {
+            setHodName(hodData.name);
+            
+            // Update the booking record with the HOD name for future reference
+            if (booking.id) {
+              await supabase
+                .from('bookings')
+                .update({ 
+                  hod_name: hodData.name,
+                  // Don't update hod_id as it's no longer in the schema
+                })
+                .eq('id', booking.id);
+            }
+          } else {
+            setHodName("HOD not assigned");
+          }
+        } catch (error) {
+          console.error("Error fetching HOD name:", error);
+          setHodName("HOD"); // Default fallback
+        }
+      } else {
+        setHodName("HOD"); // Default fallback
+      }
+    };
+
+    getHodName();
+  }, [booking?.id, booking?.department, booking?.hod_name]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -92,8 +155,13 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
       const nextStatus = getNextStatus(booking.status);
       console.log(`Approving booking ${booking.id} from ${booking.status} to ${nextStatus}`);
       
-      // Update booking status
+      // Update booking status and set HOD details if approved by HOD
       const updateData: any = { status: nextStatus };
+      
+      // If this is a HOD approval, ensure we have the HOD name
+      if (profile.role === 'hod' && !booking.hod_name) {
+        updateData.hod_name = profile.name || 'HOD';
+      }
       
       const { error: bookingError } = await supabase
         .from('bookings')
@@ -258,16 +326,24 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
             <MapPin className="h-4 w-4 text-muted-foreground" />
             <span>{booking.department} Department</span>
           </div>
+          <div className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <span>HOD: {hodName}</span>
+          </div>
         </div>
 
-        {booking.halls && (
-          <div className="p-3 bg-muted rounded-lg">
-            <p className="font-medium">{booking.halls.name}</p>
+        <div className="p-3 bg-muted rounded-lg">
+          <p className="font-medium">
+            {booking.halls?.name || booking.hall_name || 'Venue not specified'}
+          </p>
+          {booking.halls && (
             <p className="text-sm text-muted-foreground">
-              {booking.halls.block} • {booking.halls.type} • Capacity: {booking.halls.capacity}
+              {booking.halls.block ? `${booking.halls.block} • ` : ''}
+              {booking.halls.type ? `${booking.halls.type} • ` : ''}
+              {booking.halls.capacity ? `Capacity: ${booking.halls.capacity}` : ''}
             </p>
-          </div>
-        )}
+          )}
+        </div>
 
         <div className="flex flex-wrap gap-2">
           {booking.required_ac && <Badge variant="outline">AC Required</Badge>}
@@ -465,29 +541,37 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
               )}
 
               {/* Hall Information */}
-              {booking.halls && (
-                <section className="space-y-3">
-                  <h3 className="text-lg font-semibold text-foreground/90 pb-1 border-b border-border">Hall Information</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Hall Name</p>
-                      <p className="text-base">{booking.halls.name}</p>
-                    </div>
+              <section className="space-y-3">
+                <h3 className="text-lg font-semibold text-foreground/90 pb-1 border-b border-border">Venue Information</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Venue</p>
+                    <p className="text-base">
+                      {booking.halls?.name || booking.hall_name || 'Not specified'}
+                    </p>
+                  </div>
+                  {booking.halls?.block && (
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-1">Block</p>
                       <p className="text-base">{booking.halls.block}</p>
                     </div>
+                  )}
+                  {booking.halls?.type && (
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Hall Type</p>
-                      <p className="text-base capitalize">{booking.halls.type.toLowerCase()}</p>
+                      <p className="text-sm font-medium text-muted-foreground mb-1">Venue Type</p>
+                      <p className="text-base capitalize">
+                        {typeof booking.halls.type === 'string' ? booking.halls.type.toLowerCase() : 'N/A'}
+                      </p>
                     </div>
+                  )}
+                  {booking.halls?.capacity && (
                     <div>
                       <p className="text-sm font-medium text-muted-foreground mb-1">Capacity</p>
                       <p className="text-base">{booking.halls.capacity} people</p>
                     </div>
-                  </div>
-                </section>
-              )}
+                  )}
+                </div>
+              </section>
 
               {/* Metadata */}
               <div className="pt-2 text-xs text-muted-foreground border-t border-border mt-6">

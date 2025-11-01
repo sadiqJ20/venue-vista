@@ -61,16 +61,14 @@ const HODDashboard = () => {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [activeTab, setActiveTab] = useState('pending');
   
-  // Debug effect to log state changes
+  // Fetch bookings when component mounts and when profile changes
   useEffect(() => {
-    console.log('HODDashboard - Updated state:', {
-      profile,
-      bookingsCount: bookings.length,
-      loading,
-      activeTab
-    });
-  }, [profile, bookings, loading, activeTab]);
-
+    if (profile?.id) {
+      console.log('HODDashboard - Profile changed, fetching bookings...');
+      fetchBookings();
+    }
+  }, [profile?.id]);
+  
   const fetchBookings = async () => {
     if (!profile?.id) {
       console.error('No profile ID available');
@@ -99,66 +97,135 @@ const HODDashboard = () => {
         throw new Error('Could not load user profile');
       }
 
-      console.log('HOD Profile Data:', {
-        id: profileData.id,
-        role: profileData.role,
-        department: profileData.department,
-        name: profileData.name
-      });
-
+      // Verify user is HOD
       if (profileData.role !== 'hod') {
         console.error('User does not have HOD role');
-        toast({
-          title: 'Access Denied',
-          description: 'You do not have permission to access the HOD dashboard.',
-          variant: 'destructive',
-        });
-        return;
+        throw new Error('You do not have permission to access this dashboard');
       }
 
       if (!profileData.department) {
-        console.error('No department assigned to HOD');
-        toast({
-          title: 'Configuration Error',
-          description: 'Your account is not assigned to any department. Please contact support.',
-          variant: 'destructive',
-        });
-        return;
+        console.error('HOD has no department assigned');
+        throw new Error('No department assigned to your profile. Please contact support.');
       }
 
-      // Fetch bookings for the department
-      console.log(`Fetching bookings for department: ${profileData.department}`);
+      // Log HOD profile data for debugging
+      console.log('[HOD Dashboard] HOD Profile:', {
+        id: profileData.id,
+        department: profileData.department,
+        role: profileData.role,
+        email: profileData.email
+      });
       
-      const { data, error } = await supabase
+      if (!profileData.department) {
+        const errorMsg = 'No department assigned to HOD profile';
+        console.error(errorMsg);
+        throw new Error(errorMsg);
+      }
+      
+      // 1. First, fetch all bookings for the HOD's department
+      console.log(`[HOD Dashboard] Fetching bookings for department: ${profileData.department}`);
+      const { data: bookingsData, error: bookingsError } = await supabase
         .from('bookings')
-        .select(`
-          *,
-          halls:hall_id (
-            id,
-            name,
-            block,
-            type,
-            capacity,
-            has_ac,
-            has_mic,
-            has_projector,
-            has_audio_system
-          )
-        `)
-        .or(`department.eq.${profileData.department},faculty_id.eq.${profile.id}`)
-        .order('event_date', { ascending: true })
-        .order('start_time', { ascending: true });
+        .select('*')
+        .eq('department', profileData.department)
+        .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error fetching bookings:', error);
-        throw new Error(`Database error: ${error.message}`);
+      if (bookingsError) {
+        console.error('[HOD Dashboard] Error fetching bookings:', bookingsError);
+        throw new Error('Failed to load bookings');
+      }
+
+      console.log(`[HOD Dashboard] Found ${bookingsData?.length || 0} bookings for department ${profileData.department}`);
+      
+      if (bookingsData && bookingsData.length > 0) {
+        console.log('[HOD Dashboard] Sample booking:', {
+          id: bookingsData[0].id,
+          event_name: bookingsData[0].event_name,
+          status: bookingsData[0].status,
+          department: bookingsData[0].department,
+          hall_id: bookingsData[0].hall_id
+        });
       }
       
-      console.log(`Successfully fetched ${data?.length || 0} bookings`);
-      setBookings(data || []);
+      // 2. Fetch hall information for these bookings
+      const hallIds = [...new Set(bookingsData?.map(b => b.hall_id).filter(Boolean))];
+      console.log(`[HOD Dashboard] Fetching ${hallIds.length} unique halls`);
+      
+      let hallsMap = new Map();
+      if (hallIds.length > 0) {
+        const { data: hallsData, error: hallsError } = await supabase
+          .from('halls')
+          .select('*')
+          .in('id', hallIds);
+
+        if (hallsError) {
+          console.error('[HOD Dashboard] Error fetching halls:', hallsError);
+          // Continue with empty halls map if there's an error
+        } else if (hallsData && hallsData.length > 0) {
+          console.log(`[HOD Dashboard] Fetched ${hallsData.length} halls`);
+          hallsMap = new Map(hallsData.map(hall => [hall.id, hall]));
+        } else {
+          console.warn('[HOD Dashboard] No halls data found for the given IDs');
+        }
+      }
+      
+      // Combine bookings with their hall data
+      const processedBookings = (bookingsData || []).map(booking => {
+        const hall = booking.hall_id ? hallsMap.get(booking.hall_id) : null;
+        
+        // Log any missing hall data for debugging
+        if (booking.hall_id && !hall) {
+          console.warn(`[HOD Dashboard] No hall data found for hall_id: ${booking.hall_id} in booking ${booking.id}`);
+        }
+        
+        return {
+          ...booking,
+          // Ensure all required fields have fallback values
+          event_name: booking.event_name || 'Unnamed Event',
+          faculty_name: booking.faculty_name || 'Unknown Faculty',
+          // Add hall data if available
+          halls: hall ? {
+            id: hall.id,
+            name: hall.name || 'Unknown Hall',
+            block: hall.block || 'Unknown Block',
+            type: hall.type || 'Unknown Type',
+            capacity: hall.capacity || 0,
+            has_ac: hall.has_ac || false,
+            has_mic: hall.has_mic || false,
+            has_projector: hall.has_projector || false,
+            has_audio_system: hall.has_audio_system || false
+          } : null
+        };
+      });
+
+      // Sort bookings: pending_hod first, then by creation date (newest first)
+      const sortedBookings = [...processedBookings].sort((a, b) => {
+        // Pending HOD approvals first
+        if (a.status === 'pending_hod' && b.status !== 'pending_hod') return -1;
+        if (a.status !== 'pending_hod' && b.status === 'pending_hod') return 1;
+        
+        // Then sort by creation date (newest first)
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      console.log(`Processed ${sortedBookings.length} bookings for display`);
+      
+      // Log sample data for debugging
+      if (sortedBookings.length > 0) {
+        console.log('Sample booking data:', {
+          id: sortedBookings[0].id,
+          event_name: sortedBookings[0].event_name,
+          status: sortedBookings[0].status,
+          department: sortedBookings[0].department,
+          created_at: sortedBookings[0].created_at,
+          hasHall: !!sortedBookings[0].halls
+        });
+      }
+
+      setBookings(sortedBookings);
       
     } catch (error: any) {
-      console.error('Error in fetchBookings:', error);
+      console.error('[HOD Dashboard] Error in fetchBookings:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to load bookings. Please try again.',
@@ -168,12 +235,6 @@ const HODDashboard = () => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (profile?.id) {
-      fetchBookings();
-    }
-  }, [profile?.id]);
 
   const handleSwitchHall = (booking: any) => {
     setSelectedBooking(booking);
@@ -192,7 +253,7 @@ const HODDashboard = () => {
   const inReviewBookings = bookings.filter(b => ['pending_principal', 'pending_pro'].includes(b.status));
   const approvedBookings = bookings.filter(b => b.status === 'approved');
   const rejectedBookings = bookings.filter(b => b.status === 'rejected');
-  const acceptedBookings = [...approvedBookings]; // Add this line to fix the reference
+  const acceptedBookings = [...approvedBookings];
   
   // Get upcoming and past bookings
   const now = new Date();
@@ -200,30 +261,45 @@ const HODDashboard = () => {
   const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
   
   const upcomingBookings = bookings.filter(booking => {
+    if (!booking.event_date) return false;
     if (booking.event_date > today) return true;
     if (booking.event_date === today && booking.end_time > currentTime) return true;
     return false;
   });
   
   const pastBookings = bookings.filter(booking => {
+    if (!booking.event_date) return false;
     if (booking.event_date < today) return true;
     if (booking.event_date === today && booking.end_time < currentTime) return true;
     return false;
   });
   
-  // Get status badge
-  const getStatusBadge = (status: BookingStatus) => {
+  // Define valid status types
+  type BookingStatusType = 'pending_hod' | 'pending_principal' | 'pending_pro' | 'approved' | 'rejected';
+
+  // Get status badge with proper type safety
+  const getStatusBadge = (status: string) => {
+    // Type guard to check if status is valid
+    const isValidStatus = (s: string): s is BookingStatusType => {
+      return ['pending_hod', 'pending_principal', 'pending_pro', 'approved', 'rejected'].includes(s);
+    };
+
     const statusConfig = {
-      pending_hod: { label: 'Pending HOD Approval', variant: 'warning' },
-      pending_principal: { label: 'Pending Principal', variant: 'warning' },
-      pending_pro: { label: 'Pending PRO Review', variant: 'info' },
-      approved: { label: 'Approved', variant: 'success' },
-      rejected: { label: 'Rejected', variant: 'destructive' }
+      pending_hod: { label: 'Pending HOD Approval', variant: 'secondary' as const },
+      pending_principal: { label: 'Pending Principal', variant: 'secondary' as const },
+      pending_pro: { label: 'Pending PRO Review', variant: 'outline' as const },
+      approved: { label: 'Approved', variant: 'default' as const },
+      rejected: { label: 'Rejected', variant: 'destructive' as const },
+      default: { label: status, variant: 'outline' as const }
     };
     
-    const config = statusConfig[status] || { label: status, variant: 'default' };
+    // Use the status if it's valid, otherwise use default
+    const config = isValidStatus(status) 
+      ? statusConfig[status] 
+      : statusConfig.default;
+      
     return (
-      <Badge variant={config.variant as any} className="capitalize">
+      <Badge variant={config.variant} className="capitalize">
         {config.label}
       </Badge>
     );
