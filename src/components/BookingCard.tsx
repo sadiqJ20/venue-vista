@@ -24,8 +24,6 @@ interface Booking {
   event_name: string;
   description?: string;
   department: string;
-  hod_id?: string;
-  hod_name: string;
   event_date: string;
   start_time: string;
   end_time: string;
@@ -48,64 +46,12 @@ interface BookingCardProps {
 }
 
 const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }: BookingCardProps) => {
-  const [hodName, setHodName] = useState<string>('');
   const { toast } = useToast();
   const { profile } = useAuth();
   const { notifyPrincipalApproval, notifyPROApproval, notifyFacultyFinalApproval, notifyFacultyRejection } = useEmailNotifications();
   const [loading, setLoading] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
-
-  // Get HOD name from the current user if they are a HOD, otherwise fetch from booking data
-  useEffect(() => {
-    const getHodName = async () => {
-      // If we have a direct HOD name in the booking data, use it
-      if (booking?.hod_name) {
-        setHodName(booking.hod_name);
-        return;
-      }
-      
-      // If current user is a HOD, use their name
-      if (userRole === 'hod' && profile?.name) {
-        setHodName(profile.name);
-        return;
-      }
-      
-      // If we have a HOD ID but no name, try to fetch it from profiles
-      if (booking?.hod_id) {
-        try {
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('name, role')
-            .eq('id', booking.hod_id)
-            .eq('role', 'hod')
-            .single();
-
-          if (!error && data?.name) {
-            const fetchedHodName = data.name;
-            setHodName(fetchedHodName);
-            
-            // Update the booking with the HOD name for future reference
-            if (booking.id) {
-              await supabase
-                .from('bookings')
-                .update({ hod_name: fetchedHodName })
-                .eq('id', booking.id);
-            }
-          } else {
-            setHodName('HOD not assigned');
-          }
-        } catch (error) {
-          console.error('Error fetching HOD name:', error);
-          setHodName('HOD not assigned');
-        }
-      } else {
-        setHodName('HOD not assigned');
-      }
-    };
-
-    getHodName();
-  }, [booking?.id, booking?.hod_id, booking?.hod_name, booking?.faculty_name, userRole, profile]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -147,9 +93,11 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
       console.log(`Approving booking ${booking.id} from ${booking.status} to ${nextStatus}`);
       
       // Update booking status
+      const updateData: any = { status: nextStatus };
+      
       const { error: bookingError } = await supabase
         .from('bookings')
-        .update({ status: nextStatus })
+        .update(updateData)
         .eq('id', booking.id);
 
       if (bookingError) throw bookingError;
@@ -263,13 +211,13 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
   };
 
   const canApprove = () => {
-    if (!userRole || !profile) return false;
+    if (!userRole) return false;
     
     switch (booking.status) {
       case 'pending_hod':
-        return userRole === 'hod' && profile.department === booking.department;
+        return userRole === 'hod' && profile?.department === booking.department;
       case 'pending_principal':
-        return userRole === 'principal';
+        return userRole === 'principal'; // Principal can approve from any department
       case 'pending_pro':
         return false; // PRO can no longer approve - Principal is final approver
       default:
@@ -444,12 +392,6 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
                   <div className="bg-muted/30 p-4 rounded-lg border border-border">
                     <p className="text-sm font-medium text-muted-foreground mb-1">Faculty Phone</p>
                     <p className="text-base">{booking.faculty_phone || 'Not provided'}</p>
-                  </div>
-                  <div className="bg-muted/30 p-4 rounded-lg border border-border">
-                    <p className="text-sm font-medium text-muted-foreground mb-1">HOD Name</p>
-                    <p className="text-base">{hodName || (booking.hod_name ? booking.hod_name : 'HOD not assigned')}
-                      {hodName}
-                    </p>
                   </div>
                 </div>
               </section>

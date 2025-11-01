@@ -61,14 +61,6 @@ export async function sendBookingNotification(
       return false;
     }
 
-    const subject = status === "Pending"
-      ? `New Hall Booking Request - ${booking.halls?.name || "Hall"}`
-      : status === "Approved"
-      ? `Booking Request Update`
-      : `Hall Booking Request Rejected - ${booking.halls?.name || "Hall"}`;
-
-    const message = `Booking update for ${booking.event_name} (${booking.event_date} ${booking.start_time}-${booking.end_time})`;
-
     // Build descriptive comments aligned with workflow stage
     let commentsText = "";
     if (status === "Pending") {
@@ -99,27 +91,52 @@ export async function sendBookingNotification(
       return "";
     })();
 
-    await sendTestEmail({
+    // Format the email subject based on the status
+    const emailSubject = status === 'Approved' 
+      ? `Booking Approved: ${booking.event_name}` 
+      : status === 'Rejected' 
+        ? `Booking Rejected: ${booking.event_name}`
+        : `New Booking Request: ${booking.event_name}`;
+
+    // Format the email message
+    const emailMessage = status === 'Approved'
+      ? `Your booking for ${booking.event_name} has been approved by ${actionBy}.`
+      : status === 'Rejected'
+        ? `Your booking for ${booking.event_name} has been rejected by ${actionBy}.`
+        : `A new booking for ${booking.event_name} requires your approval.`;
+
+    // Include HOD information if available
+    const hodInfo = booking.hod_name ? `\n\nHOD: ${booking.hod_name}` : '';
+    const rejectionInfo = rejectionReason ? `\n\nReason: ${rejectionReason}` : '';
+
+    const emailParams = {
       recipientEmail,
-      subject,
-      message,
-      recipientName,
+      subject: emailSubject,
+      message: `${emailMessage}${hodInfo}${rejectionInfo}`,
       faculty_name: booking.faculty_name,
-      faculty_contact: booking.faculty_phone ?? "",
+      faculty_contact: booking.faculty_phone || '',
       department: booking.department,
-      hall_name: booking.halls?.name ?? "",
+      hall_name: booking.halls?.name || booking.hall_name || 'Unknown Hall',
       event_name: booking.event_name,
       event_date: booking.event_date,
       start_time: booking.start_time,
       end_time: booking.end_time,
       decision: status,
       decision_taken_by: actionBy,
-      comments: commentsText,
-      action_url: "/dashboard",
-      attendees: booking.attendees_count || booking.attendeesCount || booking.attendees || null,
-      // Add direct mapping for the email template
-      attendees_count: booking.attendees_count || booking.attendeesCount || booking.attendees || null,
-    });
+      comments: commentsText || rejectionReason || '',
+      attendees: booking.attendees_count || 0,
+      extra: {
+        // Include all the original template variables as extra data
+        to_email: recipientEmail,
+        faculty_email: booking.faculty_email || '',
+        status,
+        action_by: actionBy,
+        hod_name: booking.hod_name || 'HOD',
+        phone: booking.faculty_phone || ''
+      }
+    };
+
+    await sendTestEmail(emailParams);
 
     // If Principal approved, also notify PRO per updated workflow
     if (status === "Approved" && actionBy === "Principal") {

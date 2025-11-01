@@ -14,6 +14,7 @@ interface Profile {
   role: UserRole;
   department?: Department;
   unique_id?: string;
+  hod_id?: string;
 }
 
 interface SignUpData {

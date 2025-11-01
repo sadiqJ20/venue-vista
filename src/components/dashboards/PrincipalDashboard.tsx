@@ -5,8 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/components/ui/use-toast";
 import { LogOut, GraduationCap, Bell, BellRing } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
 import BookingCard from "@/components/BookingCard";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import BookedHallsOverview from "@/components/BookedHallsOverview";
@@ -16,39 +18,62 @@ import * as XLSX from "xlsx";
 const PrincipalDashboard = () => {
   const { profile, signOut } = useAuth();
   const { notifications, unreadCount, markAllAsRead } = useNotifications();
+  const { toast } = useToast();
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchBookings = async () => {
     setLoading(true);
+    console.log('Fetching bookings for Principal...');
+    
     try {
+      // Fetch all bookings that are either:
+      // 1. Pending principal approval (from any department), OR
+      // 2. Already approved
       const { data, error } = await supabase
         .from('bookings')
         .select(`
           *,
-          hod_id,
-          hod_name,
           halls:hall_id (
+            id,
             name,
             block,
             type,
-            capacity
+            capacity,
+            has_ac,
+            has_mic,
+            has_projector,
+            has_audio_system
           )
         `)
-        .order('created_at', { ascending: false });
+        .or('status.eq.pending_principal,status.eq.approved')
+        .order('event_date', { ascending: true })
+        .order('start_time', { ascending: true });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching bookings:', error);
+        throw error;
+      }
+      
+      console.log(`Successfully fetched ${data?.length || 0} bookings`);
       setBookings(data || []);
     } catch (error) {
-      console.error('Error fetching bookings:', error);
+      console.error('Error in fetchBookings:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load bookings. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    console.log('PrincipalDashboard mounted, fetching bookings...');
+    console.log('Profile:', profile);
     fetchBookings();
-  }, []);
+  }, [profile?.id]);
 
   const pendingBookings = bookings.filter(b => b.status === 'pending_principal');
   const approvedBookings = bookings.filter(b => b.status === 'approved'); // Principal is now final approver
