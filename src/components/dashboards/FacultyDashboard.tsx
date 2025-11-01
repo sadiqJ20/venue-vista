@@ -81,13 +81,18 @@ const FacultyDashboard = () => {
   }, [halls, searchTerm]);
 
   const fetchBookings = async () => {
-    if (!profile?.id) return;
+    if (!profile?.id) {
+      console.log('[FACULTY] No profile ID, skipping fetchBookings');
+      return;
+    }
     
+    const fetchStart = Date.now();
     setLoading(true);
-    console.log('Fetching bookings for faculty:', profile.id);
+    console.log('[FACULTY] Fetching bookings for faculty:', profile.id);
 
     try {
-      const { data, error } = await supabase
+      // Add 10s timeout
+      const fetchPromise = supabase
         .from('bookings')
         .select(`
           *,
@@ -106,19 +111,33 @@ const FacultyDashboard = () => {
         .eq('faculty_id', profile.id)
         .order('event_date', { ascending: false })
         .order('start_time', { ascending: false });
+      
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Fetch timeout')), 10000)
+      );
+      
+      const { data, error } = await Promise.race([
+        fetchPromise,
+        timeoutPromise
+      ]) as any;
+
+      const fetchTime = Date.now() - fetchStart;
 
       if (error) {
-        console.error('Error fetching bookings:', error);
+        console.error(`[FACULTY] Error fetching bookings (${fetchTime}ms):`, error);
         throw error;
       }
 
-      console.log(`Fetched ${data?.length || 0} bookings`);
+      console.log(`[FACULTY] Fetched ${data?.length || 0} bookings (${fetchTime}ms)`);
       setBookings(data || []);
-    } catch (error) {
-      console.error('Error in fetchBookings:', error);
+    } catch (error: any) {
+      const fetchTime = Date.now() - fetchStart;
+      console.error(`[FACULTY] Error in fetchBookings (${fetchTime}ms):`, error);
       toast({
         title: "Error",
-        description: "Failed to fetch bookings. Please try again.",
+        description: error.message === 'Fetch timeout' 
+          ? "Loading bookings timed out. Please refresh the page."
+          : "Failed to fetch bookings. Please try again.",
         variant: "destructive"
       });
     } finally {
