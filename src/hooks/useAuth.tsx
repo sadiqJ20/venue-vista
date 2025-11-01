@@ -52,18 +52,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('AuthProvider: Initializing auth state...');
+    const startTime = Date.now();
+    console.log('[AUTH] Initializing auth state...');
+    let isMounted = true;
     
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log(`Auth state changed: ${event}`, { hasSession: !!session, hasUser: !!session?.user });
+        if (!isMounted) return;
         
-        console.log('Auth state changed - Session:', {
-          hasSession: !!session,
-          hasUser: !!session?.user,
-          userId: session?.user?.id,
-          email: session?.user?.email
+        const eventTime = Date.now() - startTime;
+        console.log(`[AUTH] State changed: ${event} (${eventTime}ms)`, { 
+          hasSession: !!session, 
+          userId: session?.user?.id 
         });
         
         setSession(session);
@@ -71,93 +72,106 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         if (session?.user) {
           try {
-            console.log('Fetching profile for user:', session.user.id);
-            const { data: profileData, error } = await supabase
+            console.log('[AUTH] Fetching profile for user:', session.user.id);
+            const profileFetchStart = Date.now();
+            
+            // Add 10s timeout for profile fetch
+            const profilePromise = supabase
               .from('profiles')
               .select('*')
               .eq('user_id', session.user.id)
               .single();
             
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Profile fetch timeout')), 10000)
+            );
+            
+            const { data: profileData, error } = await Promise.race([
+              profilePromise,
+              timeoutPromise
+            ]) as any;
+            
+            const profileFetchTime = Date.now() - profileFetchStart;
+            
             if (error) {
-              console.error('Error fetching profile:', error);
+              console.error('[AUTH] Error fetching profile:', error);
               throw error;
             }
             
-            console.log('Profile loaded:', {
+            if (!isMounted) return;
+            
+            console.log(`[AUTH] Profile loaded (${profileFetchTime}ms):`, {
               id: profileData.id,
-              user_id: profileData.user_id,
-              name: profileData.name,
-              email: profileData.email,
               role: profileData.role,
-              department: profileData.department,
-              created_at: profileData.created_at
+              department: profileData.department
             });
             
             // Verify required fields
             if (!profileData.role) {
-              console.warn('User profile is missing role');
-            }
-            if (!profileData.department) {
-              console.warn('User profile is missing department');
+              console.warn('[AUTH] Profile missing role');
             }
             
             setProfile(profileData);
           } catch (error) {
-            console.error('Error loading profile:', error);
-            // Don't clear the session on profile load error
+            console.error('[AUTH] Profile load error:', error);
+            // Don't clear session on profile error, user can retry
           } finally {
-            setLoading(false);
+            if (isMounted) {
+              setLoading(false);
+            }
           }
         } else {
-          console.log('No user session found');
-          setProfile(null);
-          setLoading(false);
+          console.log('[AUTH] No user session');
+          if (isMounted) {
+            setProfile(null);
+            setLoading(false);
+          }
         }
-      },
-      (error) => {
-        console.error('Auth state change error:', error);
-        setLoading(false);
       }
     );
 
-    // Check for existing session
+    // Initial session check (runs once on mount)
     const checkSession = async () => {
       try {
-        console.log('Checking for existing session...');
+        console.log('[AUTH] Checking existing session...');
+        const sessionCheckStart = Date.now();
+        
         const { data: { session }, error } = await supabase.auth.getSession();
+        
+        const sessionCheckTime = Date.now() - sessionCheckStart;
+        console.log(`[AUTH] Session check complete (${sessionCheckTime}ms)`, { 
+          hasSession: !!session 
+        });
         
         if (error) throw error;
         
-        console.log('Session check complete', { hasSession: !!session, hasUser: !!session?.user });
-        
-        if (session?.user) {
-          try {
-            console.log('Fetching profile for existing session...');
-            const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('user_id', session.user.id)
-              .single();
-            
-            if (profileError) throw profileError;
-            
-            console.log('Profile loaded for existing session:', profileData);
-            setProfile(profileData);
-          } catch (error) {
-            console.error('Error loading profile for existing session:', error);
+        // If no session, we're done loading
+        if (!session?.user) {
+          if (isMounted) {
+            setLoading(false);
           }
+          return;
+        }
+        
+        // Session exists, onAuthStateChange will handle profile fetch
+        // Just set the session and user here to avoid race condition
+        if (isMounted) {
+          setSession(session);
+          setUser(session.user);
         }
       } catch (error) {
-        console.error('Session check failed:', error);
-      } finally {
-        setLoading(false);
+        console.error('[AUTH] Session check failed:', error);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     checkSession();
 
     return () => {
-      console.log('AuthProvider: Cleaning up...');
+      console.log('[AUTH] Cleaning up...');
+      isMounted = false;
       subscription?.unsubscribe();
     };
   }, []);
@@ -278,40 +292,58 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signIn = async (email: string, password: string, role?: UserRole, department?: Department, uniqueId?: string) => {
-    console.log('Sign in attempt for:', email);
+    const loginStart = Date.now();
+    console.log('[AUTH] Sign in attempt for:', email);
     
     try {
       // First, try to sign in with email and password
+      const authStart = Date.now();
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.toLowerCase().trim(),
         password: password.trim()
       });
+      const authTime = Date.now() - authStart;
 
       if (error) {
-        console.error('Authentication error:', error);
+        console.error(`[AUTH] Authentication error (${authTime}ms):`, error.message);
         return { error };
       }
 
-      console.log('Authentication successful, checking profile...');
+      console.log(`[AUTH] Authentication successful (${authTime}ms), checking profile...`);
       
-      // Get the user's profile
-      const { data: profileData, error: profileError } = await supabase
+      // Get the user's profile with timeout
+      const profileStart = Date.now();
+      const profilePromise = supabase
         .from('profiles')
         .select('*')
         .eq('user_id', data.user.id)
         .single();
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+      );
+      
+      const { data: profileData, error: profileError } = await Promise.race([
+        profilePromise,
+        timeoutPromise
+      ]) as any;
+      
+      const profileTime = Date.now() - profileStart;
 
       if (profileError || !profileData) {
-        console.error('Profile not found:', profileError);
+        console.error(`[AUTH] Profile not found (${profileTime}ms):`, profileError);
         await supabase.auth.signOut();
         return { error: { message: 'User profile not found. Please contact support.' } };
       }
 
-      console.log('User profile:', profileData);
+      console.log(`[AUTH] Profile loaded (${profileTime}ms):`, {
+        role: profileData.role,
+        department: profileData.department
+      });
 
       // If role was specified, verify it matches the user's role
       if (role && profileData.role !== role) {
-        console.error(`Role mismatch: expected ${role}, got ${profileData.role}`);
+        console.error(`[AUTH] Role mismatch: expected ${role}, got ${profileData.role}`);
         await supabase.auth.signOut();
         return { error: { message: 'You do not have permission to access this role.' } };
       }
@@ -319,23 +351,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // For faculty and HOD, verify department and unique ID if provided
       if ((profileData.role === 'faculty' || profileData.role === 'hod') && (department || uniqueId)) {
         if (department && profileData.department !== department) {
-          console.error(`Department mismatch: expected ${department}, got ${profileData.department}`);
+          console.error(`[AUTH] Department mismatch: expected ${department}, got ${profileData.department}`);
           await supabase.auth.signOut();
           return { error: { message: 'Invalid department for this user.' } };
         }
         
         if (uniqueId && profileData.unique_id !== uniqueId) {
-          console.error(`Unique ID mismatch: expected ${uniqueId}, got ${profileData.unique_id}`);
+          console.error(`[AUTH] Unique ID mismatch`);
           await supabase.auth.signOut();
           return { error: { message: 'Invalid credentials.' } };
         }
       }
 
-      console.log('Sign in successful');
+      const totalTime = Date.now() - loginStart;
+      console.log(`[AUTH] Sign in successful (total: ${totalTime}ms)`);
       return { error: null };
       
     } catch (error) {
-      console.error('Unexpected error during sign in:', error);
+      const totalTime = Date.now() - loginStart;
+      console.error(`[AUTH] Unexpected error during sign in (${totalTime}ms):`, error);
       return { 
         error: { 
           message: 'An unexpected error occurred during sign in. Please try again.' 
@@ -346,7 +380,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
-      console.log('Signing out user...');
+      console.log('[AUTH] Signing out user...');
       
       // Clear all auth state first
       setUser(null);
@@ -357,7 +391,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        console.error('Supabase sign out error:', error);
+        console.error('[AUTH] Supabase sign out error:', error);
         throw error;
       }
       
@@ -371,11 +405,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         document.cookie = c.trim().split('=')[0] + '=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/';
       });
       
-      // Force reload to clear all state and redirect to auth
+      console.log('[AUTH] Sign out successful, redirecting...');
+      // Navigate to auth page (no reload needed - React Router will handle it)
       window.location.href = '/auth';
-      window.location.reload();
     } catch (error) {
-      console.error('Error during sign out:', error);
+      console.error('[AUTH] Error during sign out:', error);
       // Even if signOut fails, clear storage and redirect
       localStorage.clear();
       sessionStorage.clear();
@@ -383,7 +417,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(null);
       setProfile(null);
       window.location.href = '/auth';
-      window.location.reload();
     }
   };
 
