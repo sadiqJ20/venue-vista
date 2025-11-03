@@ -36,15 +36,18 @@ const useMockNotifications = () => ({
   markAllAsRead: () => {}
 });
 
-// Try to import useNotifications, but don't fail if it doesn't exist
-let useNotifications = useMockNotifications;
-try {
-  // @ts-ignore - Dynamic import to prevent build-time errors
-  const notificationsModule = require('@/hooks/useNotifications');
-  useNotifications = notificationsModule.default || useMockNotifications;
-} catch (error) {
-  console.warn('useNotifications hook not available, using mock data');
-}
+// Import useNotifications with error handling
+import { useNotifications as useRealNotifications } from "@/hooks/useNotifications";
+
+// Use the real notifications hook with a fallback to mock data
+const useNotifications = () => {
+  try {
+    return useRealNotifications();
+  } catch (error) {
+    console.warn('Error using useNotifications, falling back to mock data', error);
+    return useMockNotifications();
+  }
+};
 
 const HODDashboard = () => {
   const { profile, signOut } = useAuth();

@@ -65,10 +65,11 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
   const [loading, setLoading] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
-  const [hodName, setHodName] = useState(booking.hod_name || "Not assigned");
+  // HOD name is still maintained in state for backend use, but not displayed in UI
+  const [hodName, setHodName] = useState(booking.hod_name || "");
 
   useEffect(() => {
-    const getHodName = async () => {
+    const updateHodName = async () => {
       // If we have a HOD name, use it
       if (booking?.hod_name) {
         setHodName(booking.hod_name);
@@ -91,7 +92,7 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
           if (hodData?.name) {
             setHodName(hodData.name);
             
-            // Update the booking record with the HOD name for future reference
+            // Update the booking record with the HOD name for backend reference
             if (booking.id) {
               await supabase
                 .from('bookings')
@@ -101,19 +102,14 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
                 })
                 .eq('id', booking.id);
             }
-          } else {
-            setHodName("HOD not assigned");
           }
         } catch (error) {
-          console.error("Error fetching HOD name:", error);
-          setHodName("HOD"); // Default fallback
+          console.error("Error updating HOD name in backend:", error);
         }
-      } else {
-        setHodName("HOD"); // Default fallback
       }
     };
 
-    getHodName();
+    updateHodName();
   }, [booking?.id, booking?.department, booking?.hod_name]);
 
   const getStatusColor = (status: string) => {
@@ -325,10 +321,6 @@ const BookingCard = ({ booking, onStatusUpdate, showActions = false, userRole }:
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 text-muted-foreground" />
             <span>{booking.department} Department</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <span>HOD: {hodName}</span>
           </div>
         </div>
 

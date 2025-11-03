@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useNotifications } from "@/hooks/useNotifications";
+import { useNotifications as useRealNotifications } from "@/hooks/useNotifications";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,9 +13,26 @@ import BookingCard from "@/components/BookingCard";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import BookedHallsOverview from "@/components/BookedHallsOverview";
 
+// Mock notifications fallback
+const useMockNotifications = () => ({
+  notifications: [],
+  unreadCount: 0,
+  markAllAsRead: () => {}
+});
+
+// Use the real notifications hook with error handling
+const useNotifications = () => {
+  try {
+    return useRealNotifications();
+  } catch (error) {
+    console.warn('Error using useNotifications, falling back to mock data', error);
+    return useMockNotifications();
+  }
+};
+
 const PRODashboard = () => {
   const { profile, signOut } = useAuth();
-  const { notifications, unreadCount, markAllAsRead } = useNotifications();
+  const { notifications = [], unreadCount = 0, markAllAsRead = () => {} } = useNotifications();
   const { toast } = useToast();
   type Booking = {
     id: string;
@@ -87,6 +104,104 @@ const PRODashboard = () => {
       setLoading(false);
     }
   };
+
+  // Set up real-time subscription for notifications
+  useEffect(() => {
+    if (!profile?.id) return;
+
+    console.log('Setting up notification subscription for PRO user:', profile.id);
+    
+    // Initial fetch of notifications
+    const fetchInitialNotifications = async () => {
+      console.log('Fetching initial notifications for PRO...');
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('user_id', profile.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching initial notifications:', error);
+      } else {
+        console.log(`Loaded ${data.length} notifications for PRO`);
+      }
+    };
+
+    fetchInitialNotifications();
+
+    // Subscribe to real-time notifications
+    const channel = supabase.channel('pro-notifications', {
+      config: {
+        broadcast: { ack: true },
+        presence: { key: profile.id }
+      }
+    });
+
+    // Subscribe to all notification changes
+    channel
+      .on('broadcast', { event: 'notifications' }, (payload) => {
+        console.log('Received broadcast notification:', payload);
+        handleNewNotification(payload.payload);
+      })
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${profile.id}`
+      }, (payload) => {
+        console.log('New notification from postgres_changes:', payload);
+        handleNewNotification(payload.new);
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'bookings',
+        filter: 'status=eq.pending_pro'
+      }, (payload) => {
+        console.log('Booking status changed to pending_pro:', payload);
+        fetchBookings(); // Refresh bookings when status changes to pending_pro
+      })
+      .subscribe((status) => {
+        console.log('Notification subscription status:', status);
+        
+        // Resubscribe if needed
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          console.log('Subscription error, attempting to resubscribe...');
+          channel.unsubscribe().then(() => channel.subscribe());
+        }
+      });
+
+    // Handle new notification
+    const handleNewNotification = (notification: any) => {
+      if (!notification) return;
+      
+      console.log('Processing new notification:', notification);
+      
+      // Show toast for new notification
+      toast({
+        title: notification.title || 'New Notification',
+        description: notification.message,
+        variant: 'default',
+      });
+      
+      // Play notification sound if available
+      try {
+        const audio = new Audio('/notification.mp3');
+        audio.play().catch(e => console.log('Audio play failed:', e));
+      } catch (e) {
+        console.log('Error playing notification sound:', e);
+      }
+      
+      // Force refresh of notifications and bookings
+      fetchBookings();
+    };
+
+    // Cleanup subscription on unmount
+    return () => {
+      console.log('Cleaning up notification subscription');
+      supabase.removeChannel(channel);
+    };
+  }, [profile?.id]);
 
   useEffect(() => {
     console.log('PRODashboard mounted, fetching bookings...');
