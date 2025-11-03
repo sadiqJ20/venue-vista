@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -33,17 +33,25 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [validationErrors, setValidationErrors] = useState({
     mobile: '',
     email: '',
     name: ''
   });
 
-  // Redirect if already authenticated
-  if (user) {
-    navigate('/dashboard');
-    return null;
-  }
+  /**
+   * FIX: Move redirect logic to useEffect to avoid "setState during render" error.
+   * React hooks rule: Side effects (navigation, setState) must run in useEffect, not during render.
+   * This prevents "Cannot update a component while rendering a different component" warning.
+   */
+  useEffect(() => {
+    if (user && !isRedirecting) {
+      console.log('[AUTH_PAGE] User already logged in, redirecting to dashboard...');
+      setIsRedirecting(true);
+      navigate('/dashboard', { replace: true });
+    }
+  }, [user, navigate, isRedirecting]);
 
   // Sign Up State{REGISTRATION}
   const [signUpData, setSignUpData] = useState({
@@ -129,6 +137,59 @@ const Auth = () => {
     uniqueId: ''
   });
 
+  /**
+   * FIX: Enhanced handleSignIn with proper error handling and state management.
+   * - Prevents duplicate submissions using loading/isRedirecting guards
+   * - Keeps form fields populated on error (no clearing)
+   * - Sets isRedirecting flag before navigation to prevent race conditions
+   * - Comprehensive logging for performance tracking
+   */
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Prevent duplicate submissions
+    if (loading || isRedirecting) {
+      console.log('[LOGIN] Already processing, ignoring duplicate submit');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const { error } = await signIn(
+        signInData.email, 
+        signInData.password,
+        signInData.role || undefined,
+        signInData.department || undefined,
+        signInData.uniqueId || undefined
+      );
+
+      if (error) {
+        console.error('[LOGIN] Sign in failed:', error.message);
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive"
+        });
+        // DO NOT clear form fields on error - keep them intact for retry
+      } else {
+        console.log('[LOGIN] Sign in successful, redirecting to dashboard...');
+        // Set flag first, then navigate in next render cycle to avoid race condition
+        setIsRedirecting(true);
+        // Use replace: true to prevent back button from returning to login page
+        setTimeout(() => navigate('/dashboard', { replace: true }), 100);
+      }
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -182,39 +243,6 @@ const Auth = () => {
     }
   };
 
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-    try {
-      const { error } = await signIn(
-        signInData.email, 
-        signInData.password,
-        signInData.role || undefined,
-        signInData.department || undefined,
-        signInData.uniqueId || undefined
-      );
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive"
-        });
-      } else {
-        navigate('/dashboard');
-      }
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'faculty': return <Users className="h-5 w-5" />;
@@ -225,6 +253,27 @@ const Auth = () => {
       default: return null;
     }
   };
+
+  /**
+   * FIX: Show loading state instead of returning null (early return).
+   * Early returns after hooks violate React's Rules of Hooks.
+   * All hooks must be called unconditionally and in the same order every render.
+   */
+  if (isRedirecting) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center space-y-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary/10 rounded-full mb-4">
+            <svg className="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+          <p className="text-gray-600 font-medium">Redirecting to your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col relative">
