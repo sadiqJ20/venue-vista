@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Shield, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useStatistics } from "@/hooks/useStatistics";
+import HallUsagePieChart from "@/components/Charts/HallUsagePieChart";
+import DepartmentActivityBarChart from "@/components/Charts/DepartmentActivityBarChart";
 
 interface Event {
   id: string;
@@ -29,6 +32,7 @@ const ChairmanDashboard = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<string>("");
+  const stats = useStatistics(null, null);
 
   const fetchEvents = async (filterDate?: string) => {
     setLoading(true);
@@ -104,6 +108,68 @@ const ChairmanDashboard = () => {
               <p className="text-white/90">View and filter all events</p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Statistics */}
+      <Card>
+        <CardHeader>
+          <CardTitle>All Department Requests – Statistics</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-3 items-start md:items-end mb-4">
+            <div className="flex flex-col">
+              <label className="text-sm text-muted-foreground">From</label>
+              <input
+                type="date"
+                className="border rounded-md px-3 py-2 text-sm"
+                value={stats.fromDate ?? ''}
+                onChange={(e) => stats.setFromDate(e.target.value || null)}
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-sm text-muted-foreground">To</label>
+              <input
+                type="date"
+                className="border rounded-md px-3 py-2 text-sm"
+                value={stats.toDate ?? ''}
+                onChange={(e) => stats.setToDate(e.target.value || null)}
+              />
+            </div>
+            <Button onClick={() => stats.refetch()} disabled={stats.loading}>
+              {stats.loading ? 'Loading…' : 'Apply'}
+            </Button>
+          </div>
+
+          {!stats.loading && stats.data && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Hall Usage</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {stats.data.halls.mostUsed.length + stats.data.halls.leastUsed.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No data</p>
+                  ) : (
+                    <HallUsagePieChart data={[...stats.data.halls.mostUsed, ...stats.data.halls.leastUsed]} />
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Department Activity</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {stats.data.departments.mostActive.length + stats.data.departments.leastActive.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No data</p>
+                  ) : (
+                    <DepartmentActivityBarChart data={[...stats.data.departments.mostActive, ...stats.data.departments.leastActive]} />
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </CardContent>
       </Card>
 

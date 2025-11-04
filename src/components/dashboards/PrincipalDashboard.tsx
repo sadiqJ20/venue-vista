@@ -14,6 +14,8 @@ import { NotificationCenter } from "@/components/NotificationCenter";
 import BookedHallsOverview from "@/components/BookedHallsOverview";
 import { useStatistics } from "@/hooks/useStatistics";
 import * as XLSX from "xlsx";
+import HallUsagePieChart from "@/components/Charts/HallUsagePieChart";
+import DepartmentActivityBarChart from "@/components/Charts/DepartmentActivityBarChart";
 
 const PrincipalDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -290,112 +292,26 @@ const PrincipalDashboard = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <Card>
                         <CardHeader>
-                          <CardTitle>Most Used Halls</CardTitle>
+                          <CardTitle>Hall Usage</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          {stats.data.halls.mostUsed.length === 0 ? (
+                          {stats.data.halls.mostUsed.length + stats.data.halls.leastUsed.length === 0 ? (
                             <p className="text-sm text-muted-foreground">No data</p>
                           ) : (
-                            <table className="w-full text-sm">
-                              <thead>
-                                <tr className="text-left border-b">
-                                  <th className="py-2">Hall</th>
-                                  <th className="py-2">Bookings</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {stats.data.halls.mostUsed.map((h) => (
-                                  <tr key={h.name} className="border-b">
-                                    <td className="py-2">{h.name}</td>
-                                    <td className="py-2">{h.count}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                            <HallUsagePieChart data={[...stats.data.halls.mostUsed, ...stats.data.halls.leastUsed]} />
                           )}
                         </CardContent>
                       </Card>
 
                       <Card>
                         <CardHeader>
-                          <CardTitle>Least Used Halls</CardTitle>
+                          <CardTitle>Department Activity</CardTitle>
                         </CardHeader>
                         <CardContent>
-                          {stats.data.halls.leastUsed.length === 0 ? (
+                          {stats.data.departments.mostActive.length + stats.data.departments.leastActive.length === 0 ? (
                             <p className="text-sm text-muted-foreground">No data</p>
                           ) : (
-                            <table className="w-full text-sm">
-                              <thead>
-                                <tr className="text-left border-b">
-                                  <th className="py-2">Hall</th>
-                                  <th className="py-2">Bookings</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {stats.data.halls.leastUsed.map((h) => (
-                                  <tr key={h.name} className="border-b">
-                                    <td className="py-2">{h.name}</td>
-                                    <td className="py-2">{h.count}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          )}
-                        </CardContent>
-                      </Card>
-
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>Most Active Departments</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          {stats.data.departments.mostActive.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">No data</p>
-                          ) : (
-                            <table className="w-full text-sm">
-                              <thead>
-                                <tr className="text-left border-b">
-                                  <th className="py-2">Department</th>
-                                  <th className="py-2">Bookings</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {stats.data.departments.mostActive.map((d) => (
-                                  <tr key={d.name} className="border-b">
-                                    <td className="py-2">{d.name}</td>
-                                    <td className="py-2">{d.count}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          )}
-                        </CardContent>
-                      </Card>
-
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>Least Active Departments</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          {stats.data.departments.leastActive.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">No data</p>
-                          ) : (
-                            <table className="w-full text-sm">
-                              <thead>
-                                <tr className="text-left border-b">
-                                  <th className="py-2">Department</th>
-                                  <th className="py-2">Bookings</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {stats.data.departments.leastActive.map((d) => (
-                                  <tr key={d.name} className="border-b">
-                                    <td className="py-2">{d.name}</td>
-                                    <td className="py-2">{d.count}</td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                            <DepartmentActivityBarChart data={[...stats.data.departments.mostActive, ...stats.data.departments.leastActive]} />
                           )}
                         </CardContent>
                       </Card>
