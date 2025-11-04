@@ -150,12 +150,13 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // For admin, don't require department and unique_id
       const { error } = await signUp(signUpData.email, signUpData.password, {
         name: signUpData.name,
         mobile_number: signUpData.mobile,
         role: signUpData.role,
-        department: signUpData.department || undefined,
-        unique_id: signUpData.uniqueId || undefined
+        department: signUpData.role === 'admin' ? undefined : (signUpData.department || undefined),
+        unique_id: signUpData.role === 'admin' ? undefined : (signUpData.uniqueId || undefined)
       });
 
       if (error) {
@@ -222,6 +223,7 @@ const Auth = () => {
       case 'principal': return <GraduationCap className="h-5 w-5" />;
       case 'pro': return <Briefcase className="h-5 w-5" />;
       case 'chairman': return <Shield className="h-5 w-5" />;
+      case 'admin': return <Shield className="h-5 w-5" />;
       default: return null;
     }
   };
@@ -328,6 +330,12 @@ const Auth = () => {
                                 <div className="flex items-center gap-2">
                                   {getRoleIcon('chairman')}
                                   Chairman
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="admin">
+                                <div className="flex items-center gap-2">
+                                  {getRoleIcon('admin')}
+                                  Admin
                                 </div>
                               </SelectItem>
                             </SelectContent>
@@ -483,6 +491,12 @@ const Auth = () => {
                                   Chairman
                                 </div>
                               </SelectItem>
+                              <SelectItem value="admin">
+                                <div className="flex items-center gap-2">
+                                  {getRoleIcon('admin')}
+                                  Admin
+                                </div>
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -513,6 +527,13 @@ const Auth = () => {
                               />
                             </div>
                           </>
+                        )}
+                        
+                        {signUpData.role === 'admin' && (
+                          <div className="text-sm text-muted-foreground bg-blue-50 p-3 rounded-lg border border-blue-200">
+                            <p className="font-medium text-blue-900">Admin Registration</p>
+                            <p className="text-blue-700">Admin accounts only require name, email, and password. Department and Unique ID are not required.</p>
+                          </div>
                         )}
                       </div>
                       

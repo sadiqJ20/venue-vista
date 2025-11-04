@@ -6,6 +6,7 @@ import HODDashboard from "@/components/dashboards/HODDashboard";
 import PrincipalDashboard from "@/components/dashboards/PrincipalDashboard";
 import PRODashboard from "@/components/dashboards/PRODashboard";
 import ChairmanDashboard from "@/components/dashboards/ChairmanDashboard";
+import AdminDashboard from "@/components/dashboards/AdminDashboard";
 import { Loader2, GraduationCap, LogOut, Bell, Home, Calendar, MapPin, User, Settings, Shield, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,7 +52,7 @@ const Dashboard = () => {
         }
 
         // Verify user role
-        const validRoles = ['faculty', 'hod', 'principal', 'pro', 'chairman'];
+        const validRoles = ['faculty', 'hod', 'principal', 'pro', 'chairman', 'admin'];
         if (!validRoles.includes(profile.role)) {
           console.log(`Dashboard: Unauthorized role: ${profile.role}`);
           setAuthState({ 
@@ -140,6 +141,7 @@ const Dashboard = () => {
       case 'principal': return 'Principal';
       case 'pro': return 'Public Relations Officer';
       case 'chairman': return 'Chairman';
+      case 'admin': return 'Administrator';
       default: return role;
     }
   };
@@ -151,6 +153,7 @@ const Dashboard = () => {
       case 'principal': return <GraduationCap className="h-5 w-5" />;
       case 'pro': return <User className="h-5 w-5" />;
       case 'chairman': return <Shield className="h-5 w-5" />;
+      case 'admin': return <Shield className="h-5 w-5" />;
       default: return <User className="h-5 w-5" />;
     }
   };
@@ -167,6 +170,8 @@ const Dashboard = () => {
         return <PRODashboard />;
       case 'chairman':
         return <ChairmanDashboard />;
+      case 'admin':
+        return <AdminDashboard />;
       default:
         return <div>Invalid role</div>;
     }

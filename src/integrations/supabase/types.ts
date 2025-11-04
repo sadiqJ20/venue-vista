@@ -289,6 +289,11 @@ export type Database = {
           name: string
           type: Database["public"]["Enums"]["hall_type"]
           updated_at: string
+          is_blocked: boolean | null
+          is_under_maintenance: boolean | null
+          status_note: string | null
+          status_updated_at: string
+          status_updated_by: string | null
         }
         Insert: {
           block: Database["public"]["Enums"]["block_name"]
@@ -302,6 +307,11 @@ export type Database = {
           name: string
           type: Database["public"]["Enums"]["hall_type"]
           updated_at?: string
+          is_blocked?: boolean | null
+          is_under_maintenance?: boolean | null
+          status_note?: string | null
+          status_updated_at?: string
+          status_updated_by?: string | null
         }
         Update: {
           block?: Database["public"]["Enums"]["block_name"]
@@ -315,6 +325,11 @@ export type Database = {
           name?: string
           type?: Database["public"]["Enums"]["hall_type"]
           updated_at?: string
+          is_blocked?: boolean | null
+          is_under_maintenance?: boolean | null
+          status_note?: string | null
+          status_updated_at?: string
+          status_updated_by?: string | null
         }
         Relationships: []
       }
@@ -486,7 +501,7 @@ export type Database = {
         | "PRO"
       hall_type: "Auditorium" | "Smart Classroom"
       institution_type: "School" | "Diploma" | "Polytechnic" | "Engineering"
-      user_role: "faculty" | "hod" | "principal" | "pro" | "chairman"
+      user_role: "faculty" | "hod" | "principal" | "pro" | "chairman" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
