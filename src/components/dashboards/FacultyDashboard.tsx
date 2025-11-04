@@ -26,6 +26,9 @@ interface Hall {
   has_mic: boolean;
   has_projector: boolean;
   has_audio_system: boolean;
+  is_blocked?: boolean;
+  is_under_maintenance?: boolean;
+  status_note?: string | null;
 }
 
 interface Booking {
@@ -292,6 +295,12 @@ const FacultyDashboard = () => {
                           <CardTitle className="flex items-center gap-2 text-gray-900">
                             <MapPin className="h-5 w-5 text-primary" />
                             <span className="whitespace-normal break-words">{hall.name}</span>
+                            {hall.is_under_maintenance && (
+                              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Under Maintenance</Badge>
+                            )}
+                            {!hall.is_under_maintenance && hall.is_blocked && (
+                              <Badge className="bg-red-100 text-red-800 border-red-200">Blocked</Badge>
+                            )}
                           </CardTitle>
                           <CardDescription className="text-gray-600">
                             {hall.block} • {hall.type}
@@ -343,9 +352,11 @@ const FacultyDashboard = () => {
                       <Button
                         onClick={() => handleBookHall(hall)}
                         className="w-full bg-primary hover:bg-primary-hover text-white shadow-button hover:shadow-button-hover rounded-button transition-all duration-200"
+                        disabled={hall.is_blocked || hall.is_under_maintenance}
+                        title={hall.is_under_maintenance ? (hall.status_note ? hall.status_note : 'Hall under maintenance') : (hall.is_blocked ? (hall.status_note || 'Hall is blocked') : 'Book Hall')}
                       >
                         <Plus className="h-4 w-4 mr-2" />
-                        Book Hall
+                        {hall.is_under_maintenance ? 'Unavailable (Maintenance)' : hall.is_blocked ? 'Unavailable (Blocked)' : 'Book Hall'}
                       </Button>
 
                       <Button

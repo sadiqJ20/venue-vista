@@ -3,7 +3,7 @@ import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
 type Department = 'CSE' | 'IT' | 'ECE' | 'EEE' | 'MECH' | 'CIVIL' | 'AERO' | 'CHEMICAL' | 'AIDS' | 'CSBS' | 'MCA' | 'MBA' | 'TRAINING' | 'PLACEMENT' | 'SCIENCE & HUMANITIES' | 'HR' | 'INNOVATION' | 'AI_ML' | 'NCC' | 'NSS' | 'III' | 'IEDC' | 'PRO';
-type UserRole = 'faculty' | 'hod' | 'principal' | 'pro' | 'chairman';
+type UserRole = 'faculty' | 'hod' | 'principal' | 'pro' | 'chairman' | 'admin';
 
 interface Profile {
   id: string;
@@ -214,6 +214,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
+    // Check for Admin uniqueness - only one admin allowed
+    if (userData.role === 'admin') {
+      const { data: existingAdmin, error: adminCheckError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (adminCheckError) return { error: adminCheckError };
+
+      if (existingAdmin) {
+        return { error: { message: 'Only one Admin account is allowed.' } };
+      }
+    }
+
     // Create auth user with metadata
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
@@ -330,6 +345,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return { error: { message: 'Invalid credentials.' } };
         }
       }
+
+      // Admin doesn't need department or unique ID verification
 
       console.log('Sign in successful');
       return { error: null };

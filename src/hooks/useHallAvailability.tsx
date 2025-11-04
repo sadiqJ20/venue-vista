@@ -23,6 +23,9 @@ interface Hall {
   has_mic: boolean;
   has_projector: boolean;
   has_audio_system: boolean;
+  is_blocked?: boolean;
+  is_under_maintenance?: boolean;
+  status_note?: string | null;
 }
 
 interface HallAvailability extends Hall {
@@ -92,6 +95,15 @@ export const useHallAvailability = () => {
       const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
       
       const hallsWithAvailability: HallAvailability[] = (hallsData || []).map(hall => {
+        // If hall is blocked or in maintenance, it's not available
+        if ((hall as any).is_blocked || (hall as any).is_under_maintenance) {
+          return {
+            ...(hall as any),
+            isAvailable: false,
+            bookedUntil: undefined,
+            currentBooking: undefined,
+          } as HallAvailability;
+        }
         // Find all bookings for this specific hall
         const hallBookings = (bookingsData || []).filter(booking => {
           return booking.hall_id === hall.id;
@@ -165,7 +177,7 @@ export const useHallAvailability = () => {
         });
 
         return {
-          ...hall,
+          ...(hall as any),
           isAvailable: isCurrentlyAvailable,
           bookedUntil: currentBooking 
             ? currentBooking.end_time 
