@@ -147,9 +147,25 @@ export const useNotifications = () => {
     }
   };
 
-  const clearNotifications = () => {
-    setNotifications([]);
-    setUnreadCount(0);
+  const clearNotifications = async () => {
+    if (!profile?.user_id) return;
+
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('user_id', profile.user_id);
+
+    if (!error) {
+      setNotifications([]);
+      setUnreadCount(0);
+    } else {
+      console.error('Error clearing notifications:', error);
+      toast({
+        title: "Error",
+        description: "Failed to clear notifications. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   return {
