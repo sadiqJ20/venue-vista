@@ -15,42 +15,51 @@ export async function sendBookingNotification(
   rejectionReason?: string
 ): Promise<boolean> {
   try {
-    // Look up emails for recipients based on workflow stage
-    // For simplicity, always email the next approver or the faculty on final states.
-    let recipientEmail = "";
-    if (status === "Pending") {
-      // Notify HOD for department
-      const { data } = await supabase
-        .from("profiles")
-        .select("email")
-        .eq("role", "hod")
-        .eq("department", booking.department)
-        .maybeSingle();
-      recipientEmail = data?.email || "";
-    } else if (status === "Approved") {
-      // Route to next approver based on actionBy
-      if (actionBy === "HOD") {
-        // Notify Principal
-        const { data } = await supabase.from("profiles").select("email").eq("role", "principal").maybeSingle();
-        recipientEmail = data?.email || "";
-      } else if (actionBy === "Principal") {
-        // Notify PRO for final approval
-        const { data } = await supabase.from("profiles").select("email").eq("role", "pro").maybeSingle();
-        recipientEmail = data?.email || "";
-      } else if (actionBy === "PRO") {
-        // Get faculty email to notify final approval
+    // Resolve recipient email robustly (multiple fallbacks)
+    const resolveRecipientEmail = async (): Promise<string> => {
+      // 1) Explicit email on booking, if present
+      const direct = booking.recipientEmail || booking.recipient_email || booking.email || booking.faculty_email || booking.facultyEmail;
+      if (typeof direct === 'string' && direct.includes('@')) return direct;
+
+      // 2) Based on workflow stage
+      if (status === "Pending") {
+        // Notify HOD for department
+        const { data } = await supabase
+          .from("profiles")
+          .select("email")
+          .eq("role", "hod")
+          .eq("department", booking.department)
+          .maybeSingle();
+        if (data?.email) return data.email;
+      } else if (status === "Approved") {
+        if (actionBy === "HOD") {
+          const { data } = await supabase.from("profiles").select("email").eq("role", "principal").maybeSingle();
+          if (data?.email) return data.email;
+        } else if (actionBy === "Principal") {
+          const { data } = await supabase.from("profiles").select("email").eq("role", "pro").maybeSingle();
+          if (data?.email) return data.email;
+        } else if (actionBy === "PRO") {
+          // Faculty
+          if (booking.faculty_id) {
+            const { data } = await supabase.from("profiles").select("email").eq("id", booking.faculty_id).maybeSingle();
+            if (data?.email) return data.email;
+          }
+        }
+      } else if (status === "Rejected") {
+        // Faculty
         if (booking.faculty_id) {
           const { data } = await supabase.from("profiles").select("email").eq("id", booking.faculty_id).maybeSingle();
-          recipientEmail = data?.email || "";
+          if (data?.email) return data.email;
         }
       }
-    } else if (status === "Rejected") {
-      // Notify faculty on rejection
-      if (booking.faculty_id) {
-        const { data } = await supabase.from("profiles").select("email").eq("id", booking.faculty_id).maybeSingle();
-        recipientEmail = data?.email || "";
-      }
-    }
+
+      // 3) Last-resort: guess faculty email fields on booking
+      const guessed = booking.requester_email || booking.created_by_email || booking.user_email;
+      if (typeof guessed === 'string' && guessed.includes('@')) return guessed;
+      return "";
+    };
+
+    let recipientEmail = await resolveRecipientEmail();
 
     if (!recipientEmail) {
       console.warn("sendBookingNotification: No recipient email resolved", { status, actionBy, bookingId: booking?.id, faculty_id: booking?.faculty_id });
@@ -131,7 +140,61 @@ export async function sendBookingNotification(
       }
     };
 
-    await sendTestEmail(emailParams);
+    // Try client-side EmailJS first; if it fails, fallback to server-side RPC
+    let sent = false;
+    try {
+      await sendTestEmail(emailParams);
+      sent = true;
+    } catch (clientErr) {
+      console.warn('EmailJS send failed, attempting server fallback via RPC...', clientErr);
+      try {
+        // Map status to notification type used by DB function
+        const type = status === 'Pending'
+          ? 'new_booking_request'
+          : status === 'Approved'
+            ? 'booking_approved'
+            : 'booking_rejected';
+
+        // Look up user_id by email for DB function
+        const { data: recipientProfile } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('email', recipientEmail)
+          .maybeSingle();
+
+        if (recipientProfile?.user_id) {
+          const notificationData = {
+            booking_id: booking.id,
+            hall_name: booking.halls?.name || booking.hall_name,
+            event_date: booking.event_date,
+            start_time: booking.start_time,
+            end_time: booking.end_time,
+            event_name: booking.event_name,
+            faculty_name: booking.faculty_name,
+            decision_by: actionBy,
+            rejection_reason: rejectionReason || null,
+          };
+
+          const { error: rpcError } = await supabase.rpc('send_notification', {
+            user_id_param: recipientProfile.user_id,
+            title_param: emailSubject,
+            message_param: emailMessage,
+            type_param: type,
+            data_param: notificationData as any,
+          });
+
+          if (rpcError) {
+            console.error('Server fallback RPC failed:', rpcError);
+          } else {
+            sent = true;
+          }
+        } else {
+          console.warn('Could not resolve user_id for recipient email; skipping server fallback.');
+        }
+      } catch (serverErr) {
+        console.error('Server fallback threw error:', serverErr);
+      }
+    }
 
     // Create in-app notifications for relevant users
     const notifications = [];
@@ -221,7 +284,7 @@ export async function sendBookingNotification(
       }
     }
 
-    return true;
+    return sent;
   } catch (e) {
     console.error("sendBookingNotification error", e);
     return false;

@@ -69,3 +69,4 @@ const HallUsagePieChart = memo(({ data }: HallUsagePieChartProps) => {
 export default HallUsagePieChart;
 
 
+

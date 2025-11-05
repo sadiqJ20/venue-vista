@@ -39,3 +39,4 @@ const DepartmentActivityBarChart = memo(({ data }: DepartmentActivityBarChartPro
 export default DepartmentActivityBarChart;
 
 
+

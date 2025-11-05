@@ -51,6 +51,50 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Local cache helpers for instant render while refreshing in background
+  const getCachedProfile = (uid: string): Profile | null => {
+    try {
+      const raw = localStorage.getItem(`cached-profile:${uid}`);
+      return raw ? (JSON.parse(raw) as Profile) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const setCachedProfile = (uid: string, p: Profile) => {
+    try {
+      localStorage.setItem(`cached-profile:${uid}`, JSON.stringify(p));
+    } catch {}
+  };
+
+  // Retry + timeout wrapper for robust profile fetches
+  const fetchProfileWithRetry = async (uid: string, attempts = 3, baseDelayMs = 400): Promise<Profile> => {
+    let lastErr: any;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const fetchProfile = async () => {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('user_id', uid)
+            .single();
+          if (error) throw error;
+          return data as Profile;
+        };
+        const withTimeout = (p: Promise<any>, ms: number) => Promise.race([
+          p,
+          new Promise((_, reject) => setTimeout(() => reject(new Error('PROFILE_FETCH_TIMEOUT')), ms))
+        ]);
+        return await withTimeout(fetchProfile(), 8000);
+      } catch (err) {
+        lastErr = err;
+        const delay = baseDelayMs * Math.pow(2, i);
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+    throw lastErr;
+  };
+
   useEffect(() => {
     console.log('AuthProvider: Initializing auth state...');
     
@@ -72,16 +116,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (session?.user) {
           try {
             console.log('Fetching profile for user:', session.user.id);
-            const { data: profileData, error } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('user_id', session.user.id)
-              .single();
-            
-            if (error) {
-              console.error('Error fetching profile:', error);
-              throw error;
+            // If cached profile exists, use it immediately for snappy UI
+            const cached = getCachedProfile(session.user.id);
+            if (cached && !profile) {
+              setProfile(cached);
             }
+            const profileData: Profile = await fetchProfileWithRetry(session.user.id);
             
             console.log('Profile loaded:', {
               id: profileData.id,
@@ -102,8 +142,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
             
             setProfile(profileData);
+            setCachedProfile(session.user.id, profileData);
           } catch (error) {
-            console.error('Error loading profile:', error);
+            if ((error as Error)?.message === 'PROFILE_FETCH_TIMEOUT') {
+              console.warn('Profile fetch timed out. Proceeding without profile.');
+            } else {
+              console.error('Error loading profile:', error);
+            }
             // Don't clear the session on profile load error
           } finally {
             setLoading(false);
@@ -133,18 +178,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (session?.user) {
           try {
             console.log('Fetching profile for existing session...');
-            const { data: profileData, error: profileError } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('user_id', session.user.id)
-              .single();
-            
-            if (profileError) throw profileError;
+            // Show cached profile immediately if present, then refresh in background
+            const cached = getCachedProfile(session.user.id);
+            if (cached && !profile) {
+              setProfile(cached);
+            }
+            const profileData: Profile = await fetchProfileWithRetry(session.user.id);
             
             console.log('Profile loaded for existing session:', profileData);
             setProfile(profileData);
+            setCachedProfile(session.user.id, profileData);
           } catch (error) {
-            console.error('Error loading profile for existing session:', error);
+            if ((error as Error)?.message === 'PROFILE_FETCH_TIMEOUT') {
+              console.warn('Profile fetch (existing session) timed out.');
+            } else {
+              console.error('Error loading profile for existing session:', error);
+            }
           }
         }
       } catch (error) {
